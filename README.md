@@ -10,6 +10,14 @@ You can use it to:
 - locate structures (bastion, fortress, buried treasure, shipwreck, monument)
 - run your own commands on-demand (for example, to force the dragon to perch)
 
+Demo: Eye spy / Stronghold enter
+
+[eyespy.webm](https://github.com/Knawk/mc-MiniPracticeKit/assets/1924194/c1247755-e4c0-4d28-be68-6a976fd10072)
+
+Demo: Blind travel / Nether exit
+  
+[blind.webm](https://github.com/Knawk/mc-MiniPracticeKit/assets/1924194/1e363083-3538-46d8-aeb3-b6889a2e0bb9)
+
 The MPK uses only vanilla Minecraft features: there's no need to install any mods or maintain a separate practice instance.
 Save it to a creative hotbar in your main instances so you always have it on hand!
 It also works in Minecraft versions 1.15 to 1.20 - you can even directly copy your `hotbar.nbt` file between compatible instances and it'll just work.
