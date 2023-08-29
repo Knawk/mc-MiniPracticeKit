@@ -15,8 +15,10 @@ Demo: Eye spy / Stronghold enter
 [eyespy.webm](https://github.com/Knawk/mc-MiniPracticeKit/assets/1924194/c1247755-e4c0-4d28-be68-6a976fd10072)
 
 Demo: Blind travel / Nether exit
-  
+
 [blind.webm](https://github.com/Knawk/mc-MiniPracticeKit/assets/1924194/1e363083-3538-46d8-aeb3-b6889a2e0bb9)
+
+([Full demo playlist](https://www.youtube.com/playlist?list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS))
 
 The MPK uses only vanilla Minecraft features: there's no need to install any mods or maintain a separate practice instance.
 Save it to a creative hotbar in your main instances so you always have it on hand!
