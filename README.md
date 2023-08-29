@@ -10,11 +10,11 @@ You can use it to:
 - locate structures (bastion, fortress, buried treasure, shipwreck, monument)
 - run your own commands on-demand (for example, to force the dragon to perch)
 
-Demo: Eye spy / Stronghold enter
+Demo: Eye spy / Stronghold enter ([view on YouTube](https://www.youtube.com/watch?v=zGqgCFJYtR0&list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS))
 
 [eyespy.webm](https://github.com/Knawk/mc-MiniPracticeKit/assets/1924194/c1247755-e4c0-4d28-be68-6a976fd10072)
 
-Demo: Blind travel / Nether exit
+Demo: Blind travel / Nether exit ([view on YouTube](https://www.youtube.com/watch?v=-hzr26j5DuQ&list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS))
 
 [blind.webm](https://github.com/Knawk/mc-MiniPracticeKit/assets/1924194/1e363083-3538-46d8-aeb3-b6889a2e0bb9)
 
