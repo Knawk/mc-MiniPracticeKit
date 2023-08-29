@@ -127,7 +127,21 @@ execute as @e\\
     }}] \\
     run data modify storage pk B.A append from entity @s Item.tag.pages
 
-execute unless entity @e[tag=T] run say No triggers found! Please see the manual here: TODO
+execute if entity @e[tag=T] run data modify pk I[0] set value []
+say No triggers found!
+tellraw @p [\\
+    {"text":"Check out the "},\\
+    {\\
+        "text":"manual",\\
+        "color":"aqua",\\
+        "underlined":"true",\\
+        "clickEvent":{"action":"open_url","value":"https://github.com/Knawk/mc-MiniPracticeKit"}\\
+    },\\
+    {"text":" to learn how to use the MiniPracticeKit!"}\\
+]
+
+---
+
 execute if entity @e[tag=T] run clear @p
 kill @e[tag=T]
 
