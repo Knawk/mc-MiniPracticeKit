@@ -425,7 +425,7 @@ scoreboard players remove $$Z sh 100
 scoreboard players operation $$X sh += $$dX sh
 scoreboard players operation $$Z sh += $$dZ sh
 
-# get (4, 4) and squared dist to it
+# get (4, 4)
 execute if score ?O pk matches 0 run scoreboard players add $$X sh 8
 execute if score ?O pk matches 0 run scoreboard players add $$Z sh 8
 scoreboard players operation $$X sh /= ~16 sh
@@ -434,12 +434,6 @@ scoreboard players operation $$X sh *= ~16 sh
 scoreboard players operation $$Z sh *= ~16 sh
 scoreboard players add $$X sh 4
 scoreboard players add $$Z sh 4
-scoreboard players operation $$dX sh = $$X sh
-scoreboard players operation $$dZ sh = $$Z sh
-scoreboard players operation $$dX sh *= $$dX sh
-scoreboard players operation $$dZ sh *= $$dZ sh
-scoreboard players operation $$D sh = $$dX sh
-scoreboard players operation $$D sh += $$dZ sh
 
 say Stronghold found. Loading chunks...
 
