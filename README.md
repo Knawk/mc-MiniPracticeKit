@@ -26,8 +26,8 @@ It also works in Minecraft versions 1.15 to 1.20 - you can even directly copy yo
 
 ## Basic usage
 
-Download `hotbar.nbt` and place it in your `.minecraft` folder (while the instance isn't running).
-(Back up the existing `hotbar.nbt` file if you have one.)
+Download [`hotbar.nbt`](https://github.com/Knawk/mc-MiniPracticeKit/raw/master/hotbar.nbt) and place it in your `.minecraft` folder (while the instance isn't running).
+(Back up your existing `hotbar.nbt` file if you have one.)
 This will give you a saved hotbar that includes the MPK, along with some presets for 1.16.1 Any% RSG:
 
 - Nether enter (like logwet's Noverworld mod)
@@ -50,7 +50,7 @@ See the "How to customize" section below to learn how to make your own presets.
 
 1. Open or create a Minecraft world in creative mode.
 2. Give yourself a command block by running `/give @p command_block`, and place it.
-3. Copy the following command into the command block, and click "Done".
+3. Copy the contents of [`give-mpk.txt`](/give-mpk.txt) into the command block, and click "Done".
 4. Activate the command block (for example, with a button) to get a MiniPracticeKit. You can save it to a creative hotbar for easy access.
 
 </details>
