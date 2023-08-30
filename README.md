@@ -28,18 +28,18 @@ It also works in Minecraft versions 1.15 to 1.20 - you can even directly copy yo
 
 Download [`hotbar.nbt`](https://github.com/Knawk/mc-MiniPracticeKit/raw/master/hotbar.nbt) and place it in your `.minecraft` folder (while the instance isn't running).
 (Back up your existing `hotbar.nbt` file if you have one.)
-This will give you a saved hotbar that includes the MPK, along with some presets for 1.16.1 Any% RSG:
+This will give you a saved Creative hotbar that includes the MPK, along with some presets for 1.16.1 Any% RSG:
 
-- Nether enter (like logwet's Noverworld mod)
+- Nether enter (like [logwet's Noverworld mod](https://github.com/logwet/noverworld))
 - Fortress enter (sets your inventory and shows nearby fortresses, you pick one to teleport to)
-- Nether exit / blind travel (like logwet's Blinded mod)
+- Nether exit / blind travel (like [logwet's Blinded mod](https://github.com/logwet/blinded))
 - Stronghold enter / Eye Spy
 - End enter
 
 To use the presets:
 
-1. Create a new world in creative mode.
-2. Load the saved hotbar, which includes the MPK and the preset barrels.
+1. Create a new world in Creative mode.
+2. Load the first saved hotbar, which includes the MPK and the preset barrels.
 3. Drop the desired preset barrel, and place the MPK.
 
 See the "How to customize" section below to learn how to make your own preset barrels.
@@ -50,8 +50,8 @@ See the "How to customize" section below to learn how to make your own preset ba
 
 1. Open or create a Minecraft world in creative mode.
 2. Give yourself a command block by running `/give @p command_block`, and place it.
-3. Copy the contents of [`give-mpk.txt`](/give-mpk.txt) into the command block, and click "Done".
-4. Activate the command block (for example, with a button) to get a MiniPracticeKit. You can save it to a creative hotbar for easy access.
+3. Copy the contents of [`give-mpk.txt`](/give-mpk.txt) and paste them into the command block, and click "Done".
+4. Activate the command block (for example, with a button) to get a MiniPracticeKit. You can save it to a Creative hotbar for easy access.
 
 </details>
 
