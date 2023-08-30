@@ -60,4 +60,13 @@ See the "How to customize" section below to learn how to make your own presets.
 When you place the MiniPracticeKit, it looks for nearby "trigger items" to determine what actions to perform.
 The permitted trigger items and the corresponding actions are described below.
 
-TODO
+|Trigger|Action|Notes|
+|-|-|-|
+|Chest|Give the items in the chest to the player.|If multiple chests are found, items are given in the order that the chests were dropped.|
+|Netherrack, End Stone|Teleport the player to the corresponding dimension. (Netherrack = Nether, End Stone = End)|Incompatible with other teleport actions (and each other).|
+|Obsidian|Teleport the player to good first-ring blind coordinates (through the Nether into the overworld).|Incompatible with other teleport actions. Can be slow because it searches for open nether terrain.|
+|End Portal Frame|Teleport the player to a stronghold's starter staircase.|Incompatible with other teleport actions. Always goes to the same stronghold in each world.|
+|Grass Block, Iron Sword, Map, Ender Eye|Set the player's gamemode to Creative, Survival, Adventure, or Spectator, respectively.|(The triggers match the F3+F4 gamemode menu icons.)|
+|Leather/Golden/Iron/Diamond Helmet|Set the player's difficulty to Peaceful, Easy, Normal, or Hard, respectively.||
+|Heart of the Sea, Oak Boat, Prismarine|`/locate` the related Overworld structure and show the results in chat. (Heart of the Sea = buried treasure, Oak Boat = shipwreck, Prismarine = monument)|Locating buried treasures in 1.19+ can be very slow.|
+|Gilded Blackstone, Blaze Rod|`/locate` the related Nether structure in each of the four close Nether quadrants, and show the results in chat. (Gilded Blackstone = bastion, Blaze Rod = fortress)||
