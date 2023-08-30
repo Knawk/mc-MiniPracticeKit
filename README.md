@@ -58,11 +58,12 @@ See the "How to customize" section below to learn how to make your own preset ba
 ## How to customize the MPK's behavior
 
 When you place the MiniPracticeKit, it looks for nearby "trigger items" to determine what actions to perform.
+They're designed to be easy to customize in-game so you don't need to download or learn any external tools.
 The permitted trigger items and the corresponding actions are described below.
 
 |Trigger|Action|Notes|
 |-|-|-|
-|Chest|Give the items in the chest to the player.|If multiple chests are found, items are given in the order that the chests were dropped.|
+|Chest|Give the items in the chest to the player. If multiple chests are found, items are given in the order that the chests were dropped.|To get a chest with items into your inventory, hold CTRL and press pick-block on a chest with the items you want.|
 |Netherrack, End Stone|Teleport the player to the corresponding dimension. (Netherrack = Nether, End Stone = End)|Incompatible with other teleport actions (and each other).|
 |Obsidian|Teleport the player to good first-ring blind coordinates (through the Nether into the overworld).|Incompatible with other teleport actions. Can be slow because it searches for open nether terrain.|
 |End Portal Frame|Teleport the player to a stronghold's starter staircase.|Incompatible with other teleport actions. Always goes to the same stronghold in each world.|
@@ -72,4 +73,4 @@ The permitted trigger items and the corresponding actions are described below.
 |Gilded Blackstone, Blaze Rod|`/locate` the related Nether structure in each of the four close Nether quadrants, and show the results in chat. (Gilded Blackstone = bastion, Blaze Rod = fortress)||
 |Book and Quill|Give the player a potion, that when thrown, runs each of the book's pages as a command. If the book is named (via anvil), the name is copied to the potion so you can tell it apart from others.|Each page should contain a command exactly as it would be typed into chat: no extra space before or after, and no newlines. One potion is given per book.|
 |Book and Quill, named "AUTO"|Run each of the book's pages as a command. The commands are run *after* any teleport/gamemode/difficulty actions.|Each page should contain a command exactly as it would be typed into chat: no extra space before or after, and no newlines.|
-|Barrel|Treat the items in the barrel as trigger items. This allows you combine several trigger items into a single trigger item, like the presets in [`hotbar.nbt`](https://github.com/Knawk/mc-MiniPracticeKit/raw/master/hotbar.nbt).|Recursion is not supported; barrels inside barrels will not be "unpacked".|
+|Barrel|Treat the items in the barrel as trigger items. This allows you combine several trigger items into a single trigger item, like the presets in [`hotbar.nbt`](https://github.com/Knawk/mc-MiniPracticeKit/raw/master/hotbar.nbt).|To get a barrel with items into your inventory, hold CTRL and press pick-block on a barrel with the items you want. Recursion is not supported; barrels inside barrels will not be "unpacked".|
