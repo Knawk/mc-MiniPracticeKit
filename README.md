@@ -39,10 +39,10 @@ This will give you a saved hotbar that includes the MPK, along with some presets
 To use the presets:
 
 1. Create a new world in creative mode.
-2. Load the saved hotbar, which includes the MPK and the presets.
-3. Drop the desired preset, and place the MPK.
+2. Load the saved hotbar, which includes the MPK and the preset barrels.
+3. Drop the desired preset barrel, and place the MPK.
 
-See the "How to customize" section below to learn how to make your own presets.
+See the "How to customize" section below to learn how to make your own preset barrels.
 
 <details>
 
