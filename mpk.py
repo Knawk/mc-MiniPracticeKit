@@ -322,9 +322,8 @@ STRONGHOLD_SUBROUTINES = tuple(
     compile_spu_program(string.Template("""
 execute as @e[tag=M] at @s positioned ^ ^ ^2048 store result score @s sh run $locate
 ---
-execute as @e[tag=M] at @s positioned ^ ^ ^2048 positioned ~-100 ~ ~-100 store result score $$dW sh run $locate
-execute as @e[tag=M] at @s positioned ^ ^ ^2048 positioned ~100 ~ ~-100 store result score $$dE sh run $locate
-execute as @e[tag=M] at @s positioned ^ ^ ^2048 positioned ~ ~ ~100 store result score $$dS sh run $locate
+execute as @e[tag=M] at @s positioned ^ ^ ^2048 positioned ~200 ~ ~ store result score $$dE sh run $locate
+execute as @e[tag=M] at @s positioned ^ ^ ^2048 positioned ~ ~ ~200 store result score $$dS sh run $locate
 ---
 # /locate uses (8, 8) pre-1.19, and (0, 0) in 1.19+, but we have (4, 4), so we need an appropriate offset
 execute unless score ?O pk matches 0 as @e[tag=M] at @s positioned ~4 ~ ~4 store result score @s sh run $locate
@@ -388,7 +387,6 @@ say Locating stronghold. This may take several seconds...
 # setup
 forceload add -1 -1 0 0
 scoreboard objectives add sh dummy
-scoreboard players set ~n200 sh -200
 scoreboard players set ~16 sh 16
 scoreboard players set ~400 sh 400
 data merge storage sh {p:[0d,60d,0d]}
@@ -412,32 +410,28 @@ data modify storage pk I insert 1 from storage pg L0.S[1]
 
 ---
 
-scoreboard players operation $$dW sh *= $$dW sh
+scoreboard players operation $$D sh *= $$D sh
 scoreboard players operation $$dE sh *= $$dE sh
 scoreboard players operation $$dS sh *= $$dS sh
 
-# compute x-offset from west point to SH
-scoreboard players operation $$dX sh = $$dW sh
-scoreboard players operation $$dX sh -= $$dE sh
-scoreboard players add $$dX sh 40000
-scoreboard players operation $$dX sh /= ~400 sh
+# compute west offset from marker to SH
+scoreboard players operation $$dE sh -= $$D sh
+scoreboard players remove $$dE sh 40000
+scoreboard players operation $$dE sh /= ~400 sh
 
-# compute z-offset from west point to SH
-scoreboard players operation $$dZ sh = ~n200 sh
-scoreboard players operation $$dZ sh *= $$dX sh
-scoreboard players operation $$dZ sh += $$dW sh
-scoreboard players operation $$dZ sh -= $$dS sh
-scoreboard players add $$dZ sh 50000
-scoreboard players operation $$dZ sh /= ~400 sh
+# compute north offset from marker to SH
+scoreboard players operation $$dS sh -= $$D sh
+scoreboard players remove $$dS sh 40000
+scoreboard players operation $$dS sh /= ~400 sh
 
-# compute SH coords
+# get marker coords
 execute as @e[tag=M] at @s positioned ^ ^ ^2.048 run tp @s ~ ~ ~
 execute store result score $$X sh run data get entity @e[tag=M,limit=1] Pos[0] 1000
 execute store result score $$Z sh run data get entity @e[tag=M,limit=1] Pos[2] 1000
-scoreboard players remove $$X sh 100
-scoreboard players remove $$Z sh 100
-scoreboard players operation $$X sh += $$dX sh
-scoreboard players operation $$Z sh += $$dZ sh
+
+# SH coords = marker coords - offsets
+scoreboard players operation $$X sh -= $$dE sh
+scoreboard players operation $$Z sh -= $$dS sh
 
 # get (4, 4)
 execute if score ?O pk matches 0 run scoreboard players add $$X sh 8
@@ -452,6 +446,7 @@ scoreboard players add $$Z sh 4
 say Stronghold found. Loading chunks...
 
 # teleport player
+gamerule fallDamage false
 setblock 8 ~ 8 end_gateway{ExitPortal:{X:0,Y:999999,Z:0},ExactTeleport:1b}
 execute store result block 8 ~ 8 ExitPortal.X int 1 run scoreboard players get $$X sh
 execute store result block 8 ~ 8 ExitPortal.Z int 1 run scoreboard players get $$Z sh
@@ -518,6 +513,7 @@ execute unless entity @e[tag=B] run say Stronghold starter not found
 execute at @e[tag=B] run fill ~-1 ~-1 ~-1 ~1 ~-1 ~1 stone_bricks
 execute at @e[tag=B] run say Done! Teleporting to stronghold starter.
 execute at @e[tag=B,limit=1] run tp @p ~0.5 ~ ~0.5 ~ ~
+gamerule fallDamage true
 
 # cleanup
 kill @e[tag=M]
