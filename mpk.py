@@ -127,7 +127,7 @@ execute as @e\\
     }}] \\
     run data modify storage pk B.A append from entity @s Item.tag.pages
 
-execute if entity @e[tag=T] run data modify pk I[0] set value []
+execute if entity @e[tag=T] run data modify storage pk I[0] set value []
 say No triggers found!
 tellraw @p [\\
     {"text":"Check out the "},\\
