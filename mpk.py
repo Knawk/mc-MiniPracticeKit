@@ -711,7 +711,7 @@ kill @e[tag=Z]
 
 
 MPK_LORE = '[\'%s\',\'%s\']' % (
-    '{"text":"v0.1","italic":false,"color":"gray"}',
+    '{"text":"v0.2","italic":false,"color":"gray"}',
     '{"text":"Created by ","extra":[{"text":"Knawk", "color":"aqua"}],"italic":false,"color":"gray"}',
 )
 
