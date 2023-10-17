@@ -61,6 +61,7 @@ data modify storage pg L0 set from entity @e[tag=C,limit=1] HandItems[0].tag.L0
 data modify storage pg L1 set from entity @e[tag=C,limit=1] HandItems[0].tag.L1
 data modify storage pg L2 set from entity @e[tag=C,limit=1] HandItems[0].tag.L2
 data modify storage pg N set from entity @e[tag=C,limit=1] HandItems[0].tag.N
+data modify storage pg W set from entity @e[tag=C,limit=1] HandItems[0].tag.W
 data modify storage pg Z set from entity @e[tag=C,limit=1] HandItems[0].tag.Z
 
 # clean up from bootstrap process
@@ -223,6 +224,17 @@ tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 
 execute if data storage pk {T:["minecraft:blaze_rod"]} run data modify storage pk I insert 1 from storage pg L0.N[1]
 execute if data storage pk {T:["minecraft:gilded_blackstone"]} run data modify storage pk I insert 1 from storage pg L0.N[0]
+
+---
+
+# load waiting mode program if going to nether structure(s)
+
+execute \\
+    unless data storage pk {T:["minecraft:blaze_rod"]} \\
+    unless data storage pk {T:["minecraft:gilded_blackstone"]} \\
+    run data modify storage pk I[0] set value []
+data modify storage pg _ set from storage pg W
+data modify storage pk I[0] set from storage pg Z[0]
 
 ---
 
@@ -678,6 +690,47 @@ execute in the_nether run forceload remove all
 """).substitute())
 
 
+WAITING_MODE_PROGRAM = compile_spu_program(string.Template("""
+tag @p add W
+gamemode creative @p
+execute in the_nether run tp @p 0 999999 0
+
+say Entered teleport waiting mode.
+say Select desired coordinates above, then press Enter/Return to be teleported to nearby terrain.
+say Change your gamemode to cancel.
+
+title @p times 0 2147483647 0
+title @p title {"text":"Waiting..."}
+title @p subtitle {"text":"Please see instructions in chat."}
+
+---
+
+# if player is in stasis but changed gamemode, exit waiting mode
+execute as @p[tag=W,gamemode=!creative] run tag @s remove W
+execute if entity @p[tag=!W] run say Gamemode changed, exiting waiting mode.
+execute if entity @p[tag=!W] run data modify storage pk I[0] set value []
+
+# if player has teleported away, exit waiting mode
+execute at @p positioned 0 999999 0 run tag @p[distance=8..] remove W
+execute if entity @p[tag=!W] run say Teleport detected, sending to nearby terrain.
+execute if entity @p[tag=!W] run data modify storage pk I[0] set value []
+
+# maintain waiting position, loop
+execute as @p at @s run tp @s 0 999999 0
+data modify storage pk I insert 1 from storage pg W[1]
+data merge storage pk {H:1}
+
+---
+
+# spreadplayers no matter how the player exited waiting mode
+execute if entity @p[tag=!W] at @p run spreadplayers ~ ~ 0 64 under 90 false @p
+
+# cleanup
+title @p clear
+title @p reset
+""").substitute())
+
+
 # Single-sequence utility programs.
 # Each first instruction is intentionally invalid so that a given program can be loaded with just:
 # `data modify storage pk I[0] set from storage pg Z[...]`
@@ -711,7 +764,7 @@ kill @e[tag=Z]
 
 
 MPK_LORE = '[\'%s\',\'%s\']' % (
-    '{"text":"v0.2","italic":false,"color":"gray"}',
+    '{"text":"v0.3-beta","italic":false,"color":"gray"}',
     '{"text":"Created by ","extra":[{"text":"Knawk", "color":"aqua"}],"italic":false,"color":"gray"}',
 )
 
@@ -771,6 +824,7 @@ def main():
         'L1': '{S:%s,O:%s,N:%s}' % (STRONGHOLD_SUBROUTINES[1], LOCATE_OVERWORLD_SUBROUTINES[1], LOCATE_NETHER_SUBROUTINES[1]),
         'L2': '{S:%s,O:%s,N:%s}' % (STRONGHOLD_SUBROUTINES[2], LOCATE_OVERWORLD_SUBROUTINES[2], LOCATE_NETHER_SUBROUTINES[2]),
         'N': NETHER_TERRAIN_PROGRAM,
+        'W': WAITING_MODE_PROGRAM,
         'Z': UTIL_PROGRAMS,
     }.items())
     program_carrier = '{id:armor_stand,Marker:1b,Invisible:1b,HandItems:[{Count:1b,id:egg,tag:{%s}}],Tags:["C"]}' % (programs,)
