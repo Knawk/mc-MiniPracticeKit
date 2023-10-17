@@ -227,14 +227,23 @@ execute if data storage pk {T:["minecraft:gilded_blackstone"]} run data modify s
 
 ---
 
-# load waiting mode program if going to nether structure(s)
+# go to nether structure(s)
 
 execute \\
     unless data storage pk {T:["minecraft:blaze_rod"]} \\
     unless data storage pk {T:["minecraft:gilded_blackstone"]} \\
     run data modify storage pk I[0] set value []
+
+# if `spreadplayers under` isn't available, prepare to tp to Nether via portal
+scoreboard players reset ?SP pk
+execute store success score ?SP pk run spreadplayers ~ ~ 0 1 under 0 true @p[tag=,tag=_]
+
+# otherwise load waiting mode program
 data modify storage pg _ set from storage pg W
-data modify storage pk I[0] set from storage pg Z[0]
+execute if score ?SP pk matches 0 run data modify storage pk I[0] set from storage pg Z[0]
+
+say Nether structure terrain teleportation is not supported in 1.15; sending you to Nether instead...
+data modify storage pk T append value "minecraft:netherrack"
 
 ---
 
@@ -722,8 +731,11 @@ data merge storage pk {H:1}
 
 ---
 
+# prevent fall damage when async chunk loading is enabled
+effect give @p resistance 1 255
+
 # spreadplayers no matter how the player exited waiting mode
-execute if entity @p[tag=!W] at @p run spreadplayers ~ ~ 0 64 under 90 false @p
+execute at @p run spreadplayers ~ ~ 0 64 under 90 false @p
 
 # cleanup
 title @p clear
