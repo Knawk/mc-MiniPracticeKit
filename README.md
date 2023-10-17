@@ -5,6 +5,7 @@ You can use it to:
 
 - set your inventory/gamemode/difficulty
 - teleport to the Nether/End
+- teleport to terrain near Nether structures
 - teleport directly to the stronghold starter staircase
 - teleport to good blind travel coordinates
 - locate structures (bastion, fortress, buried treasure, shipwreck, monument)
@@ -28,10 +29,11 @@ It also works in Minecraft versions 1.15 to 1.20 - you can even directly copy yo
 
 Download [`hotbar.nbt`](https://github.com/Knawk/mc-MiniPracticeKit/raw/master/hotbar.nbt) and place it in your `.minecraft` folder (while the instance isn't running).
 (Back up your existing `hotbar.nbt` file if you have one.)
-This will give you a saved Creative hotbar that includes the MPK, along with some presets for 1.16.1 Any% RSG:
+This will give you a saved Creative hotbar that includes the MPK, along with some presets for practicing modern 1.16.1 Any% RSG splits:
 
 - Nether enter (like [logwet's Noverworld mod](https://github.com/logwet/noverworld))
-- Fortress enter (sets your inventory and shows nearby fortresses, you pick one to teleport to)
+- Bastion enter
+- Fortress enter
 - Nether exit / blind travel (like [logwet's Blinded mod](https://github.com/logwet/blinded))
 - Stronghold enter / Eye Spy
 - End enter
@@ -69,8 +71,8 @@ The permitted trigger items and the corresponding actions are described below.
 |End Portal Frame|Teleport the player to a stronghold's starter staircase.|Incompatible with other teleport actions. Always goes to the same stronghold in each world.|
 |Grass Block, Iron Sword, Map, Ender Eye|Set the player's gamemode to Creative, Survival, Adventure, or Spectator, respectively. (The triggers match the F3+F4 gamemode menu icons.)|Incompatible with each other.|
 |Leather/Golden/Iron/Diamond Helmet|Set the player's difficulty to Peaceful, Easy, Normal, or Hard, respectively.|Incompatible with each other.|
-|Heart of the Sea, Oak Boat, Prismarine|`/locate` the related Overworld structure and show the results in chat. (Heart of the Sea = buried treasure, Oak Boat = shipwreck, Prismarine = monument)|Locating buried treasures in 1.19+ can be very slow.|
-|Gilded Blackstone, Blaze Rod|`/locate` the related Nether structure in each of the four close Nether quadrants, and show the results in chat. (Gilded Blackstone = bastion, Blaze Rod = fortress)||
+|Heart of the Sea, Oak Boat, Prismarine|`/locate` the related Overworld structure and show the coordinates in chat. (Heart of the Sea = buried treasure, Oak Boat = shipwreck, Prismarine = monument)|Locating buried treasures in 1.19+ can be very slow.|
+|Gilded Blackstone, Blaze Rod|Send in chat the coordinates of the related Nether structure(s) in each of the four close Nether quadrants, and put the player in teleport-waiting mode. In this mode, if you click on one of the coordinates in chat and press Enter/Return, then you will be teleported near those coordinates (at most 64 blocks away). If you change gamemode instead, then you will be teleported to near (0, 0). (Gilded Blackstone = bastion, Blaze Rod = fortress)||
 |Book and Quill|Give the player a potion, that when thrown, runs each of the book's pages as a command. If the book is named (via anvil), the name is copied to the potion so you can tell it apart from others.|Each page should contain a command exactly as it would be typed into chat: no extra space before or after, and no newlines. One potion is given per book.|
 |Book and Quill, named "AUTO"|Run each of the book's pages as a command. The commands are run *after* any teleport/gamemode/difficulty actions.|Each page should contain a command exactly as it would be typed into chat: no extra space before or after, and no newlines.|
 |Barrel|Treat the items in the barrel as trigger items. This allows you combine several trigger items into a single trigger item, like the presets in [`hotbar.nbt`](https://github.com/Knawk/mc-MiniPracticeKit/raw/master/hotbar.nbt).|To get a barrel with items into your inventory, hold CTRL and press pick-block on a barrel with the items you want. Recursion is not supported; barrels inside barrels will not be "unpacked".|
