@@ -717,11 +717,13 @@ title @p subtitle {"text":"Please see instructions in chat."}
 # if player is in stasis but changed gamemode, exit waiting mode
 execute as @p[tag=W,gamemode=!creative] run tag @s remove W
 execute if entity @p[tag=!W] run say Gamemode changed, exiting waiting mode.
+scoreboard players set $$_ pk 0
 execute if entity @p[tag=!W] run data modify storage pk I[0] set value []
 
 # if player has teleported away, exit waiting mode
 execute at @p positioned 0 999999 0 run tag @p[distance=8..] remove W
 execute if entity @p[tag=!W] run say Teleport detected, sending to nearby terrain.
+scoreboard players set $$_ pk 16
 execute if entity @p[tag=!W] run data modify storage pk I[0] set value []
 
 # maintain waiting position, loop
@@ -732,14 +734,47 @@ data merge storage pk {H:1}
 ---
 
 # prevent fall damage when async chunk loading is enabled
-effect give @p resistance 1 255
-
-# spreadplayers no matter how the player exited waiting mode
-execute at @p run spreadplayers ~ ~ 0 64 under 90 false @p
+effect give @p resistance 3 255
 
 # cleanup
 title @p clear
 title @p reset
+
+execute at @p run forceload add ~ ~
+execute at @p run summon area_effect_cloud ~ 0 ~ {Tags:["M"]}
+
+---
+
+# spreadplayers no matter how the player exited waiting mode
+execute at @e[tag=M] run spreadplayers ~ ~ 0 72 under 84 false @p
+
+# @p[tag=W] indicates to try again
+tag @p remove W
+
+# exit loop early if out of retries
+execute if score $$_ pk matches 0 run data modify storage pk I[0] set value []
+scoreboard players remove $$_ pk 1
+
+# try again if standing on nether bricks
+execute at @p if block ~ ~-1 ~ nether_bricks run tag @p add W
+
+# try again if within 40 blocks horizontally of marker
+execute at @p[tag=!W] \\
+    positioned ~-40 0 ~-40 if entity @e[tag=M,dx=80,dy=99,dz=80] \\
+    run tag @p add W
+
+# try again if terrain isn't open enough (not enough air within 13x9x13)
+execute as @p[tag=!W] at @s store result score @s pk \\
+    if blocks ~-6 ~ ~-6 ~6 ~8 ~6 ~-6 ~ ~-6 masked
+execute as @p[tag=!W,scores={pk=400..}] run tag @s add W
+
+# loop if need to try again
+execute if entity @p[tag=W] run data modify storage pk I insert 1 from storage pg W[3]
+
+---
+
+execute at @e[tag=M] run forceload remove ~ ~
+kill @e[tag=M]
 """).substitute())
 
 
