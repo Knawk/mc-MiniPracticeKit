@@ -733,17 +733,33 @@ data merge storage pk {H:1}
 
 ---
 
-# prevent fall damage when async chunk loading is enabled
-effect give @p resistance 3 255
-
 # cleanup
 title @p clear
 title @p reset
 
 execute at @p run forceload add ~ ~
-execute at @p run summon area_effect_cloud ~ 0 ~ {Tags:["M"]}
+execute if score ?A pk matches 0 at @p run forceload add ~-80 ~-80 ~80 ~80
+execute at @p run summon armor_stand ~ 0 ~ {Tags:["M"],Marker:1b,Invisible:1b}
 
 ---
+
+# enter chunk loading loop only if necessary
+execute unless score ?A pk matches 0 run data modify storage pk I[0] set value []
+
+# wait until chunks are loaded
+execute at @p \\
+    if blocks ~-80 0 ~-80 ~-80 0 ~-80 ~-80 0 ~-80 all \\
+    if blocks ~-80 0 ~80 ~-80 0 ~80 ~-80 0 ~80 all \\
+    if blocks ~80 0 ~-80 ~80 0 ~-80 ~80 0 ~-80 all \\
+    if blocks ~80 0 ~80 ~80 0 ~80 ~80 0 ~80 all \\
+    run data modify storage pk I[0] set value []
+data merge storage pk {H:1}
+data modify storage pk I insert 1 from storage pg W[3]
+
+---
+
+# prevent fall damage when async chunk loading is enabled
+effect give @p resistance 3 255
 
 # spreadplayers no matter how the player exited waiting mode
 execute at @e[tag=M] run spreadplayers ~ ~ 0 72 under 84 false @p
@@ -769,11 +785,11 @@ execute as @p[tag=!W] at @s store result score @s pk \\
 execute as @p[tag=!W,scores={pk=400..}] run tag @s add W
 
 # loop if need to try again
-execute if entity @p[tag=W] run data modify storage pk I insert 1 from storage pg W[3]
+execute if entity @p[tag=W] run data modify storage pk I insert 1 from storage pg W[4]
 
 ---
 
-execute at @e[tag=M] run forceload remove ~ ~
+execute at @e[tag=M] run forceload remove ~-80 ~-80 ~80 ~80
 kill @e[tag=M]
 """).substitute())
 
