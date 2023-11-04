@@ -1,4 +1,4 @@
-# MiniPracticeKit
+# MiniPracticeKit v0.3
 
 MiniPracticeKit (MPK) is a versatile Minecraft speedrunning practice kit that fits in a single command block.
 You can use it to:
