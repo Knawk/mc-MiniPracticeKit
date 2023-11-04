@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3
+
+New features:
+
+- Add triggers for teleporting to nearby Nether structures
+
 ## v0.2
 
 Fixes:
