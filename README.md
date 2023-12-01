@@ -11,11 +11,13 @@ You can use it to:
 - locate structures (bastion, fortress, buried treasure, shipwreck, monument)
 - run your own commands on-demand (for example, to force the dragon to perch)
 
-Demo: Eye spy / Stronghold enter ([view on YouTube](https://www.youtube.com/watch?v=zGqgCFJYtR0&list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS))
+See [Basic usage](#basic-usage) for download and usage instructions.
+
+*Demo*: Eye spy / Stronghold enter ([view on YouTube](https://www.youtube.com/watch?v=zGqgCFJYtR0&list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS))
 
 [eyespy.webm](https://github.com/Knawk/mc-MiniPracticeKit/assets/1924194/c1247755-e4c0-4d28-be68-6a976fd10072)
 
-Demo: Blind travel / Nether exit ([view on YouTube](https://www.youtube.com/watch?v=-hzr26j5DuQ&list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS))
+*Demo*: Blind travel / Nether exit ([view on YouTube](https://www.youtube.com/watch?v=-hzr26j5DuQ&list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS))
 
 [blind.webm](https://github.com/Knawk/mc-MiniPracticeKit/assets/1924194/1e363083-3538-46d8-aeb3-b6889a2e0bb9)
 
@@ -27,7 +29,7 @@ It also works in Minecraft versions 1.15 to 1.20 - you can even directly copy yo
 
 ## Basic usage
 
-Download [`hotbar.nbt`](https://github.com/Knawk/mc-MiniPracticeKit/raw/master/hotbar.nbt) and place it in your `.minecraft` folder (while the instance isn't running).
+Download [`hotbar.nbt`](https://github.com/Knawk/mc-MiniPracticeKit/raw/master/hotbar.nbt) and place it in your `.minecraft` folder, while the instance isn't running.
 (Back up your existing `hotbar.nbt` file if you have one.)
 This will give you a saved Creative hotbar that includes the MPK, along with some presets for practicing modern 1.16.1 Any% RSG splits:
 
@@ -46,9 +48,11 @@ To use the presets:
 
 See the "How to customize" section below to learn how to make your own preset barrels.
 
+### Alternative: get the MPK by itself, without overriding saved hotbars
+
 <details>
 
-<summary>Alternative: get the MPK without overriding your saved hotbars</summary>
+<summary>(Click to expand)</summary>
 
 1. Open or create a Minecraft world in creative mode.
 2. Give yourself a command block by running `/give @p command_block`, and place it.
