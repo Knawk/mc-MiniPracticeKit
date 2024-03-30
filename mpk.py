@@ -108,9 +108,16 @@ data remove storage pk C[0]
 # save trigger IDs
 execute as @e[tag=T] run data modify storage pk T append from entity @s Item.id
 
-# save items from chests
+# tag item containers
+tag @e[tag=T,nbt={Item:{id:"minecraft:chest"}}] add I
+tag @e[tag=T,nbt={Item:{id:"minecraft:brown_shulker_box"}},sort=random,limit=1] add I
+tag @e[tag=T,nbt={Item:{id:"minecraft:red_shulker_box"}},sort=random,limit=1] add I
+tag @e[tag=T,nbt={Item:{id:"minecraft:orange_shulker_box"}},sort=random,limit=1] add I
+tag @e[tag=T,nbt={Item:{id:"minecraft:yellow_shulker_box"}},sort=random,limit=1] add I
+
+# save items from item containers
 data remove storage pk C
-execute as @e[tag=T,type=item,nbt={Item:{id:"minecraft:chest"}}] \\
+execute as @e[tag=I] \\
     run data modify storage pk C append from entity @s Item.tag.BlockEntityTag.Items
 
 data remove storage pk B
