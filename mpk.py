@@ -50,7 +50,7 @@ def compile_spu_program(prog):
 MAIN_PROGRAM = compile_spu_program(string.Template("""
 # setup
 
-tellraw @p [{"text":"MiniPracticeKit activated!","color":"aqua","bold":true}]
+tellraw @p [{"text":"MiniPracticeKit v0.4 activated!","color":"aqua","bold":true}]
 scoreboard objectives add pk dummy
 gamerule announceAdvancements false
 
@@ -841,7 +841,7 @@ kill @e[tag=Z]
 
 
 MPK_LORE = '[\'%s\',\'%s\']' % (
-    '{"text":"v0.3","italic":false,"color":"gray"}',
+    '{"text":"v0.4","italic":false,"color":"gray"}',
     '{"text":"Created by ","extra":[{"text":"Knawk", "color":"aqua"}],"italic":false,"color":"gray"}',
 )
 

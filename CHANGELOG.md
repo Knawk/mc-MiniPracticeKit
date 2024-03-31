@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4
+
+New features:
+
+- Randomize inventory items using colored shulker box triggers
+- Select "blind modes" to choose whether to automatically build the portal and/or go through it to the Overworld
+
 ## v0.3
 
 New features:

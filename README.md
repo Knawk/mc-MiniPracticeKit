@@ -1,4 +1,4 @@
-# MiniPracticeKit v0.3
+# MiniPracticeKit v0.4
 
 MiniPracticeKit (MPK) is a versatile Minecraft speedrunning practice kit that fits in a single command block.
 You can use it to:
@@ -26,7 +26,7 @@ See [Basic usage](#basic-usage) for download and usage instructions.
 
 The MPK uses only vanilla Minecraft features: there's no need to install any mods or maintain a separate practice instance.
 Save it to a creative hotbar in your main instances so you always have it on hand!
-It also works in Minecraft versions 1.15 to 1.20 - you can even directly copy your `hotbar.nbt` file between compatible instances and it'll just work.
+It also works in Minecraft versions 1.15 to 1.20.4 - you can even directly copy your `hotbar.nbt` file between compatible instances and it'll just work.
 
 ## Basic usage
 
