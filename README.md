@@ -1,4 +1,4 @@
-# MiniPracticeKit v0.4
+# MiniPracticeKit v0.5
 
 MiniPracticeKit (MPK) is a versatile Minecraft speedrunning practice kit that fits in a single command block.
 You can use it to:
@@ -77,7 +77,8 @@ The permitted trigger items and the corresponding actions are described below.
 |Trigger|Action|Notes|
 |-|-|-|
 |Chest|Give the items in the chest to the player. If multiple chests are found, items are given in the order that the chests were dropped.|To get a chest with items into your inventory, hold CTRL and press pick-block on a chest with the items you want.|
-|Shulker Box (Brown/Red/Orange/Yellow)|Picks a random shulker box of each color, and gives its items to the player.|To get a shulker box with items into your inventory, hold CTRL and press pick-block on a shulker box with the items you want.|
+|White Shulker Box|Gives the items in the shulker box to the player, in a random order.|To get a shulker box with items into your inventory, hold CTRL and press pick-block on a shulker box with the items you want.|
+|Brown/Red/Orange/Yellow Shulker Boxes|Picks one random shulker box of each color, and gives its items to the player.|To get a shulker box with items into your inventory, hold CTRL and press pick-block on a shulker box with the items you want.|
 |Netherrack, End Stone|Teleport the player to the corresponding dimension. (Netherrack = Nether, End Stone = End)|Incompatible with other teleport actions (and each other).|
 |Obsidian|Teleport the player to good first-ring blind coordinates. The number of obsidian items in the stack determine what happens at those coordinates. 1 item = build a portal and go through to the Overworld; 2 item = build a portal only; 3 item = don't build a portal.|Incompatible with other teleport actions. Can be slow because it searches for open nether terrain.|
 |End Portal Frame|Teleport the player to a stronghold's starter staircase.|Incompatible with other teleport actions. Always goes to the same stronghold in each world.|
