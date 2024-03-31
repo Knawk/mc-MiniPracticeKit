@@ -108,6 +108,11 @@ data remove storage pk C[0]
 # save trigger IDs
 execute as @e[tag=T] run data modify storage pk T append from entity @s Item.id
 
+# save trigger modes
+execute as @e[tag=T,nbt={Item:{id:"minecraft:obsidian"}}] \\
+    store result score BM pk \\
+    run data get entity @s Item.Count
+
 # tag item containers
 tag @e[tag=T,nbt={Item:{id:"minecraft:chest"}}] add I
 tag @e[tag=T,nbt={Item:{id:"minecraft:brown_shulker_box"}},sort=random,limit=1] add I
@@ -664,25 +669,28 @@ say Done! Teleporting to blind location.
 kill @e[tag=R]
 data remove storage pg _
 
-# if no good dummy is left, tp player to fallback portal location
+# if no good dummy is left, create fallback dummy and clear the area
 execute if entity @e[tag=N] run data modify storage pk I[0] set value []
 data storage remove pk I[1]
 execute in the_nether run forceload add 150 150
-execute in the_nether run setblock 150 63 150 netherrack
-execute in the_nether run fill 150 64 150 150 65 150 air
-execute in the_nether run tp @p 150 64 150
+execute in the_nether run summon armor_stand 150 64 150 {Tags:["N"]}
+execute at @e[tag=N] run setblock ~ ~-1 ~ netherrack
+execute at @e[tag=N] run fill ~ ~ ~ ~ ~1 ~ air
 
 ---
 
-# build nether-side portal frame and tp player
+execute if score BM pk matches 3.. run data modify storage pk I[0] set value []
 
+# build nether-side portal frame
 execute at @e[tag=N] run fill ~-1 ~1 ~-1 ~2 ~3 ~1 air
 execute at @e[tag=N] run fill ~-1 ~ ~ ~2 ~4 ~ obsidian
 execute at @e[tag=N] run fill ~ ~1 ~ ~1 ~3 ~ air
-execute as @e[tag=N] at @s run tp @s ~ ~1 ~
-tp @p @e[tag=N,limit=1]
+# avoid teleporting into partial blocks like soul sand
+execute as @e[tag=N] at @s run tp @s ~ ~1.5 ~
 
 ---
+
+tp @p @e[tag=N,limit=1]
 
 # wait for teleport before adding portal
 execute in overworld if entity @p[x=0] run data modify storage pk I prepend from storage pk I[0]
@@ -690,8 +698,8 @@ data merge storage pk {H:1}
 ---
 
 # add portal blocks
+execute if score BM pk matches 2.. run data modify storage pk I[0] set value []
 execute at @e[tag=N] run fill ~ ~ ~ ~1 ~2 ~ nether_portal
-execute in the_nether unless entity @e[tag=N] run setblock 150 64 150 nether_portal
 
 # wait for teleport before allowing gamemode change
 execute in the_nether if entity @p[x=0] run data modify storage pk I prepend from storage pk I[0]
@@ -699,7 +707,6 @@ data merge storage pk {H:1}
 ---
 
 # cleanup
-execute in the_nether unless entity @e[tag=N] run fill 150 63 150 150 64 150 air
 kill @e[tag=D]
 
 execute in the_nether run forceload remove all
