@@ -14,13 +14,19 @@ You can use it to:
 
 See [Basic usage](#basic-usage) for download and usage instructions.
 
-*Demo*: Eye spy / Stronghold enter ([view on YouTube](https://www.youtube.com/watch?v=zGqgCFJYtR0&list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS))
+## Demo videos (click to watch)
 
-[eyespy.webm](https://github.com/Knawk/mc-MiniPracticeKit/assets/1924194/c1247755-e4c0-4d28-be68-6a976fd10072)
+### Eye spy / Stronghold enter
 
-*Demo*: Blind travel / Nether exit ([view on YouTube](https://www.youtube.com/watch?v=-hzr26j5DuQ&list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS))
+<a href="https://www.youtube.com/watch?v=zGqgCFJYtR0&list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS" target="_blank">
+  <img src="https://img.youtube.com/vi/zGqgCFJYtR0/0.jpg" width="480">
+</a>
 
-[blind.webm](https://github.com/Knawk/mc-MiniPracticeKit/assets/1924194/1e363083-3538-46d8-aeb3-b6889a2e0bb9)
+### Blind travel / Nether exit
+
+<a href="https://www.youtube.com/watch?v=-hzr26j5DuQ&list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS" target="_blank">
+  <img src="https://img.youtube.com/vi/-hzr26j5DuQ/0.jpg" width="480">
+</a>
 
 ([Full demo playlist](https://www.youtube.com/playlist?list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS))
 
