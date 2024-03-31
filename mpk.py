@@ -41,7 +41,8 @@ def compile_spu_program(prog):
 # Notes on main program:
 #   - storage pk.I is the main instruction buffer
 #   - storage pk.H is the halt flag
-#   - storage pk.C stores lists of items from chests to be given to player
+#   - storage pk.C stores lists of items from containers to be given to player
+#   - storage pk.R stores items from white boxes to be given in random order
 #   - storage pk.B stores data for auto/potion scripts
 #       - pk.B.P stores tags of writable books for potion scripts
 #       - pk.B.A stores contents of writable books for auto scripts
@@ -114,10 +115,15 @@ execute as @e[tag=T,nbt={Item:{id:"minecraft:obsidian"}}] \\
 
 # tag item containers
 tag @e[tag=T,nbt={Item:{id:"minecraft:chest"}}] add I
+tag @e[tag=T,nbt={Item:{id:"minecraft:white_shulker_box"}}] add I
 tag @e[tag=T,nbt={Item:{id:"minecraft:brown_shulker_box"}},sort=random,limit=1] add I
 tag @e[tag=T,nbt={Item:{id:"minecraft:red_shulker_box"}},sort=random,limit=1] add I
 tag @e[tag=T,nbt={Item:{id:"minecraft:orange_shulker_box"}},sort=random,limit=1] add I
 tag @e[tag=T,nbt={Item:{id:"minecraft:yellow_shulker_box"}},sort=random,limit=1] add I
+
+# add randomize marker to white shulker boxes
+execute as @e[tag=I,nbt={Item:{id:"minecraft:white_shulker_box"}}] \\
+    run data modify entity @s Item.tag.BlockEntityTag.Items append value {Slot:-1b}
 
 # save items from item containers
 data remove storage pk C
@@ -141,16 +147,12 @@ execute as @e\\
 
 execute if entity @e[tag=T] run data modify storage pk I[0] set value []
 say No triggers found!
-tellraw @p [\\
-    {"text":"Check out the "},\\
-    {\\
-        "text":"manual",\\
-        "color":"aqua",\\
-        "underlined":"true",\\
-        "clickEvent":{"action":"open_url","value":"https://github.com/Knawk/mc-MiniPracticeKit"}\\
-    },\\
-    {"text":" to learn how to use the MiniPracticeKit!"}\\
-]
+tellraw @p {\\
+    "text":"Visit the website for info!",\\
+    "color":"aqua",\\
+    "underlined":"true",\\
+    "clickEvent":{"action":"open_url","value":"http://mpk.knawk.net"}\\
+}
 
 ---
 
@@ -189,15 +191,31 @@ data modify storage pk C append from storage pk B.i
 # align player to ensure correct pickup order
 execute at @p align xz run tp @p ~.5 ~ ~.5
 
-execute if data storage pk C[] run data modify storage pk I prepend from storage pk I[0]
-execute if data storage pk {C:[]} run data modify storage pk I[0] set value []
+data modify storage pk I prepend from storage pk I[0]
 
-# give items to player
+# reify items from C[0]
 execute at @p run setblock ~ ~ ~ chest{CustomName:"$chest_name"}
 execute at @p run data modify block ~ ~ ~ Items set from storage pk C[0]
 execute at @p run setblock ~ ~ ~ air destroy
-execute at @p run kill @e[type=item,distance=..8,nbt={Item:{id:"minecraft:chest",tag:{display:{Name:"$chest_name"}}}}]
+execute at @p run kill @e[type=item,distance=..4,nbt={Item:{id:"minecraft:chest",tag:{display:{Name:"$chest_name"}}}}]
+
+# if C[0] has an item with the randomize marker, cache them in R...
+data remove storage pk R
+execute at @p if data storage pk C[0][{Slot:-1b}] \\
+    as @e[type=item,distance=..4,tag=!CI,sort=random] \\
+    run data modify storage pk R append from entity @s Item
+execute at @p if data storage pk R[] \\
+    run kill @e[type=item,distance=..4,tag=!CI]
+
 data remove storage pk C[0]
+execute at @p run tag @e[type=item,distance=..4] add CI
+
+execute unless data storage pk C[] unless data storage pk R[] \\
+    run data remove storage pk I[1]
+
+# ...then insert the items from R individually to C in a random order
+execute if data storage pk R[] \\
+    run data modify storage pk I[0] set from storage pg Z[2]
 
 ---
 
@@ -425,11 +443,11 @@ data merge storage sh {p:[0d,60d,0d]}
 
 # spawn markers
 # TODO optimize?
-summon armor_stand 0.0 0 0.0 {Marker:1b,Tags:["M"]}
-summon armor_stand 0.0 0 0.0 {Marker:1b,Tags:["M"],Rotation:[30f]}
-summon armor_stand 0.0 0 0.0 {Marker:1b,Tags:["M"],Rotation:[60f]}
-summon armor_stand 0.0 0 0.0 {Marker:1b,Tags:["M"],Rotation:[90f]}
-summon armor_stand 0.0 0 0.0 {Marker:1b,Tags:["M"],Rotation:[120f]}
+summon armor_stand .0 0 .0 {Marker:1b,Tags:["M"]}
+summon armor_stand .0 0 .0 {Marker:1b,Tags:["M"],Rotation:[30f]}
+summon armor_stand .0 0 .0 {Marker:1b,Tags:["M"],Rotation:[60f]}
+summon armor_stand .0 0 .0 {Marker:1b,Tags:["M"],Rotation:[90f]}
+summon armor_stand .0 0 .0 {Marker:1b,Tags:["M"],Rotation:[120f]}
 
 # kill all but best marker
 data modify storage pk I[0] insert 1 from storage pg L0.S[0][0]
@@ -571,7 +589,7 @@ execute if entity @e[tag=R] run data remove storage pk I[1]
 ---
 
 # use UUID to give ray a random yaw, then summon another facing 180deg away
-execute as @e[tag=R] store result entity @s Rotation[0] float 1 run data get entity @s UUID[0] 0.001
+execute as @e[tag=R] store result entity @s Rotation[0] float 1 run data get entity @s UUID[0] .001
 execute as @e[tag=R] at @s run tp @e[type=armor_stand,tag=!R,distance=..1] ~ ~ ~ ~180 ~
 execute at @e[tag=R] as @e[type=armor_stand,distance=..1] run data merge entity @s {Tags:["R"],Marker:1b}
 
@@ -824,7 +842,7 @@ execute if data storage pg _[0] run data modify storage pk I insert 1 from stora
 execute at @p run forceload add ~ ~
 execute at @p run summon armor_stand ~ ~1 ~ {Marker:1b,Invisible:1b,Tags:["Z"]}
 
-execute at @p align xyz run tp @p ~0.5 ~ ~0.5
+execute at @p align xyz run tp @p ~.5 ~ ~.5
 execute at @p if block 0 0 1 bedrock run clone 8 0 8 8 0 8 ~ ~ ~
 execute if block 0 0 1 bedrock run setblock 8 0 8 air
 execute at @p run clone 8 -64 8 8 -64 8 ~ ~ ~
@@ -836,13 +854,23 @@ data merge storage pk {H:1}
 
 execute at @e[tag=Z] run setblock ~ ~-1 ~ air
 kill @e[tag=Z]
+
+---
+
+# Prepend each element of storage pk.R to pk.C as a singleton list;
+# e.g. if pk.R = [1, 2, 3] then pk.C will start with [[3], [2], [1], ...]
+-
+
+data modify storage pk C prepend value [{Slot:0b}]
+data modify storage pk C[0][0] merge from storage pk R[0]
+
+data remove storage pk R[0]
+execute if data storage pk R[0] run data modify storage pk I[0] set from storage pg Z[2]
+
 """).substitute())
 
 
-MPK_LORE = '[\'%s\',\'%s\']' % (
-    '{"text":"v0.4","italic":false,"color":"gray"}',
-    '{"text":"Created by ","extra":[{"text":"Knawk", "color":"aqua"}],"italic":false,"color":"gray"}',
-)
+MPK_LORE = '[\'{"text":"Created by ","extra":[{"text":"Knawk", "color":"aqua"}]}\']'
 
 
 def main():
@@ -910,9 +938,9 @@ def main():
     )
 
     # phase 0: load phase 1 command block
-    phase0_tag = '{auto:1b,Command:\'execute unless entity @e[tag=C,distance=..1.5] unless entity @e[type=falling_block,distance=..1.5] run summon falling_block ~ ~0.5 ~ %s\'}' % (escape(phase1, 's'),)
+    phase0_tag = '{auto:1b,Command:\'execute unless entity @e[tag=C,distance=..1.5] unless entity @e[type=falling_block,distance=..1.5] run summon falling_block ~ ~.5 ~ %s\'}' % (escape(phase1, 's'),)
     display = '{Name:\'%s\',Lore:%s}' % (
-        '{"text":"MiniPracticeKit","bold":true,"italic":false,"color":"aqua"}',
+        '{"text":"MiniPracticeKit v0.4","bold":true,"italic":false,"color":"aqua"}',
         MPK_LORE,
     )
     phase0 = 'repeating_command_block{CustomModelData:1,BlockStateTag:{facing:"up"},BlockEntityTag:%s,display:%s}' % (
