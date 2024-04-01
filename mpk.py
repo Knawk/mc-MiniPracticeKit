@@ -55,14 +55,7 @@ scoreboard objectives add pk dummy
 gamerule announceAdvancements false
 
 # save auxiliary programs
-data modify storage pg S set from entity @e[tag=C,limit=1] HandItems[0].tag.S
-data modify storage pg P set from entity @e[tag=C,limit=1] HandItems[0].tag.P
-data modify storage pg L0 set from entity @e[tag=C,limit=1] HandItems[0].tag.L0
-data modify storage pg L1 set from entity @e[tag=C,limit=1] HandItems[0].tag.L1
-data modify storage pg L2 set from entity @e[tag=C,limit=1] HandItems[0].tag.L2
-data modify storage pg N set from entity @e[tag=C,limit=1] HandItems[0].tag.N
-data modify storage pg W set from entity @e[tag=C,limit=1] HandItems[0].tag.W
-data modify storage pg Z set from entity @e[tag=C,limit=1] HandItems[0].tag.Z
+data modify storage pg ~ set from entity @e[tag=C,limit=1] HandItems[0].tag
 
 # clean up from bootstrap process
 execute at @e[tag=V] run fill ~ ~1 ~ ~15 ~1 ~2 bedrock
@@ -78,10 +71,10 @@ execute store success score ?O pk if block 0 -64 0 mud
 # detect version's locate command, copy appropriate locate sequences into L0
 scoreboard players reset ?L2 pk
 execute store success score ?L2 pk run locate Fortress
-execute if score ?L2 pk matches 0 run data modify storage pg L0 set from storage pg L2
+execute if score ?L2 pk matches 0 run data modify storage pg ~.L0 set from storage pg ~.L2
 scoreboard players reset ?L1 pk
 execute store success score ?L1 pk run locate fortress
-execute if score ?L1 pk matches 0 run data modify storage pg L0 set from storage pg L1
+execute if score ?L1 pk matches 0 run data modify storage pg ~.L0 set from storage pg ~.L1
 
 # track thrown triggers
 data remove storage pk T
@@ -215,7 +208,7 @@ execute unless data storage pk C[] unless data storage pk R[] \\
 
 # ...then insert the items from R individually to C in a random order
 execute if data storage pk R[] \\
-    run data modify storage pk I[0] set from storage pg Z[2]
+    run data modify storage pk I[0] set from storage pg ~.Z[2]
 
 ---
 
@@ -228,7 +221,7 @@ data merge storage pk {H:1}
 
 execute unless data storage pk {T:["minecraft:heart_of_the_sea"]} run data modify storage pk I[0] set value []
 execute if score ?A pk matches 0 run say Warning: locating buried treasure may take a while!
-data modify storage pk I[0] insert 1 from storage pg L0.O[0][0]
+data modify storage pk I[0] insert 1 from storage pg ~.L0.O[0][0]
 tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 
 ---
@@ -236,7 +229,7 @@ tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 # locate shipwreck
 
 execute unless data storage pk {T:["minecraft:oak_boat"]} run data modify storage pk I[0] set value []
-data modify storage pk I[0] insert 1 from storage pg L0.O[1][0]
+data modify storage pk I[0] insert 1 from storage pg ~.L0.O[1][0]
 tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 
 ---
@@ -244,15 +237,15 @@ tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 # locate monument
 
 execute unless data storage pk {T:["minecraft:prismarine"]} run data modify storage pk I[0] set value []
-data modify storage pk I[0] insert 1 from storage pg L0.O[2][0]
+data modify storage pk I[0] insert 1 from storage pg ~.L0.O[2][0]
 tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 
 ---
 
 # locate bastions/fortresses
 
-execute if data storage pk {T:["minecraft:blaze_rod"]} run data modify storage pk I insert 1 from storage pg L0.N[1]
-execute if data storage pk {T:["minecraft:gilded_blackstone"]} run data modify storage pk I insert 1 from storage pg L0.N[0]
+execute if data storage pk {T:["minecraft:blaze_rod"]} run data modify storage pk I insert 1 from storage pg ~.L0.N[1]
+execute if data storage pk {T:["minecraft:gilded_blackstone"]} run data modify storage pk I insert 1 from storage pg ~.L0.N[0]
 
 ---
 
@@ -268,8 +261,8 @@ scoreboard players reset ?SP pk
 execute store success score ?SP pk run spreadplayers ~ ~ 0 1 under 0 true @p[tag=,tag=_]
 
 # otherwise load waiting mode program
-data modify storage pg _ set from storage pg W
-execute if score ?SP pk matches 0 run data modify storage pk I[0] set from storage pg Z[0]
+data modify storage pg _ set from storage pg ~.W
+execute if score ?SP pk matches 0 run data modify storage pk I[0] set from storage pg ~.Z[0]
 
 say Nether structure terrain teleportation is not supported in 1.15; sending you to Nether instead...
 data modify storage pk T append value "minecraft:netherrack"
@@ -284,8 +277,8 @@ data remove storage pk I[1]
 data remove storage pk I[1]
 
 # load blind mode program
-data modify storage pg _ set from storage pg N
-data modify storage pk I[0] set from storage pg Z[0]
+data modify storage pg _ set from storage pg ~.N
+data modify storage pk I[0] set from storage pg ~.Z[0]
 
 ---
 
@@ -296,8 +289,8 @@ execute unless data storage pk {T:["minecraft:end_portal_frame"]} run data modif
 data remove storage pk I[1]
 
 # load stronghold program
-data modify storage pg _ set from storage pg S
-data modify storage pk I[0] set from storage pg Z[0]
+data modify storage pg _ set from storage pg ~.S
+data modify storage pk I[0] set from storage pg ~.Z[0]
 
 ---
 
@@ -306,7 +299,7 @@ data modify storage pk I[0] set from storage pg Z[0]
 setblock 8 ~ 8 air
 execute if data storage pk {T:["minecraft:netherrack"]} run setblock 8 ~ 8 nether_portal
 execute if data storage pk {T:["minecraft:end_stone"]} run setblock 8 ~ 8 end_portal
-execute unless block 8 ~ 8 air run data modify storage pk I[0] set from storage pg Z[1]
+execute unless block 8 ~ 8 air run data modify storage pk I[0] set from storage pg ~.Z[1]
 
 ---
 
@@ -327,7 +320,7 @@ execute if data storage pk {T:["minecraft:diamond_helmet"]} run difficulty hard
 # run auto scripts
 
 data modify storage pg _ set from storage pk B.A
-data modify storage pk I[0] set from storage pg Z[0]
+data modify storage pk I[0] set from storage pg ~.Z[0]
 
 ---
 
@@ -381,7 +374,7 @@ execute if score ?O pk matches 0 as @e[tag=M] at @s positioned ~-4 ~ ~-4 store r
 ---
 # delay until marker is loaded
 execute if score ?A pk matches 0 unless entity @e[tag=M] run data merge storage pk {H:1}
-execute unless entity @e[tag=M] run data modify storage pk I insert 1 from storage pg L0.S[3]
+execute unless entity @e[tag=M] run data modify storage pk I insert 1 from storage pg ~.L0.S[3]
     """).substitute(locate=fmt('stronghold')))
     for fmt in LOCATE_FORMATS
 )
@@ -450,13 +443,13 @@ summon armor_stand .0 0 .0 {Marker:1b,Tags:["M"],Rotation:[90f]}
 summon armor_stand .0 0 .0 {Marker:1b,Tags:["M"],Rotation:[120f]}
 
 # kill all but best marker
-data modify storage pk I[0] insert 1 from storage pg L0.S[0][0]
+data modify storage pk I[0] insert 1 from storage pg ~.L0.S[0][0]
 scoreboard players set $$D sh 9999
 execute as @e[tag=M] run scoreboard players operation $$D sh < @s sh
 execute as @e[tag=M] unless score $$D sh = @s sh run kill @s
 
 # measure distances for trilateration
-data modify storage pk I insert 1 from storage pg L0.S[1]
+data modify storage pk I insert 1 from storage pg ~.L0.S[1]
 
 ---
 
@@ -500,7 +493,7 @@ gamerule fallDamage false
 setblock 8 ~ 8 end_gateway{ExitPortal:{X:0,Y:999999,Z:0},ExactTeleport:1b}
 execute store result block 8 ~ 8 ExitPortal.X int 1 run scoreboard players get $$X sh
 execute store result block 8 ~ 8 ExitPortal.Z int 1 run scoreboard players get $$Z sh
-data modify storage pk I[0] set from storage pg Z[1]
+data modify storage pk I[0] set from storage pg ~.Z[1]
 
 ---
 
@@ -508,7 +501,7 @@ data modify storage pk I[0] set from storage pg Z[1]
 execute store result storage sh p[0] double 1 run scoreboard players get $$X sh
 execute store result storage sh p[2] double 1 run scoreboard players get $$Z sh
 data modify entity @e[tag=M,limit=1] Pos set from storage sh p
-data modify storage pk I insert 1 from storage pg L0.S[3]
+data modify storage pk I insert 1 from storage pg ~.L0.S[3]
 
 ---
 
@@ -680,7 +673,7 @@ scoreboard players add $$_ pk 1
 data modify storage pg _ set from storage pk J
 execute unless entity @e[tag=N] \\
     unless score $$_ pk matches 7 \\
-    run data modify storage pk I[0] set from storage pg Z[0]
+    run data modify storage pk I[0] set from storage pg ~.Z[0]
 
 say Done! Teleporting to blind location.
 kill @e[tag=R]
@@ -759,7 +752,7 @@ execute if entity @p[tag=!W] run data modify storage pk I[0] set value []
 
 # maintain waiting position, loop
 execute as @p at @s run tp @s 0 999999 0
-data modify storage pk I insert 1 from storage pg W[1]
+data modify storage pk I insert 1 from storage pg ~.W[1]
 data merge storage pk {H:1}
 
 ---
@@ -785,7 +778,7 @@ execute at @p \\
     if blocks ~80 0 ~80 ~80 0 ~80 ~80 0 ~80 all \\
     run data modify storage pk I[0] set value []
 data merge storage pk {H:1}
-data modify storage pk I insert 1 from storage pg W[3]
+data modify storage pk I insert 1 from storage pg ~.W[3]
 
 ---
 
@@ -816,7 +809,7 @@ execute as @p[tag=!W] at @s store result score @s pk \\
 execute as @p[tag=!W,scores={pk=400..}] run tag @s add W
 
 # loop if need to try again
-execute if entity @p[tag=W] run data modify storage pk I insert 1 from storage pg W[4]
+execute if entity @p[tag=W] run data modify storage pk I insert 1 from storage pg ~.W[4]
 
 ---
 
@@ -827,13 +820,13 @@ kill @e[tag=M]
 
 # Single-sequence utility programs.
 # Each first instruction is intentionally invalid so that a given program can be loaded with just:
-# `data modify storage pk I[0] set from storage pg Z[...]`
+# `data modify storage pk I[0] set from storage pg ~.Z[...]`
 UTIL_PROGRAMS = compile_spu_program(string.Template("""
 # Loads the program at pg._ into the instruction buffer.
 -
 data modify storage pk I insert 1 from storage pg _[-1]
 data remove storage pg _[-1]
-execute if data storage pg _[0] run data modify storage pk I insert 1 from storage pg Z[0]
+execute if data storage pg _[0] run data modify storage pk I insert 1 from storage pg ~.Z[0]
 
 ---
 
@@ -865,7 +858,7 @@ data modify storage pk C prepend value [{Slot:0b}]
 data modify storage pk C[0][0] merge from storage pk R[0]
 
 data remove storage pk R[0]
-execute if data storage pk R[0] run data modify storage pk I[0] set from storage pg Z[2]
+execute if data storage pk R[0] run data modify storage pk I[0] set from storage pg ~.Z[2]
 
 """).substitute())
 
