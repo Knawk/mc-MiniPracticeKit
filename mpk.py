@@ -432,7 +432,7 @@ forceload add -1 -1 0 0
 scoreboard objectives add sh dummy
 scoreboard players set ~16 sh 16
 scoreboard players set ~400 sh 400
-data merge storage sh {p:[0d,60d,0d]}
+data merge storage sh {p:[0d,61d,0d]}
 
 # spawn markers
 # TODO optimize?
@@ -506,11 +506,11 @@ data modify storage pk I insert 1 from storage pg ~.L0.S[3]
 ---
 
 # set up markers for search
-execute as @e[tag=M] at @s run tp @s ~ ~ ~ 0 0
-tag @e[tag=M] add MM
-execute at @e[tag=MM] run summon armor_stand ~ ~ ~ {Tags:["M"],Marker:1b,Rotation:[90f]}
-execute at @e[tag=MM] run summon armor_stand ~ ~ ~ {Tags:["M"],Marker:1b,Rotation:[180f]}
-execute at @e[tag=MM] run summon armor_stand ~ ~ ~ {Tags:["M"],Marker:1b,Rotation:[-90f]}
+data merge entity @e[tag=M,limit=1] {Rotation:[0f],Tags:["M","MM"]}
+summon armor_stand ~ ~ ~ {Tags:["M"],Marker:1b,Rotation:[90f]}
+summon armor_stand ~ ~ ~ {Tags:["M"],Marker:1b,Rotation:[180f]}
+summon armor_stand ~ ~ ~ {Tags:["M"],Marker:1b,Rotation:[-90f]}
+execute at @e[tag=MM] run tp @e[tag=M] ~ ~ ~
 
 # wait 1gt to avoid maxCommandChainLength
 data merge storage pk {H:1}
@@ -519,43 +519,39 @@ data merge storage pk {H:1}
 
 # locate bottom of starter
 
-data modify storage pk I prepend from storage pk I[0]
+data modify storage pk J set from storage pk I[0]
 
+execute as @e[tag=M] at @s run tp @s ~ ~-1 ~
 execute as @e[tag=M] at @s \\
     if block ^1 ^ ^1 smooth_stone_slab[type=bottom] \\
-    if block ^1 ^1 ^-1 smooth_stone_slab[type=bottom] \\
-    if block ^-1 ^2 ^-1 smooth_stone_slab[type=bottom] \\
-    if block ^-1 ^3 ^1 smooth_stone_slab[type=bottom] \\
-    if block ^1 ^4 ^1 smooth_stone_slab[type=bottom] \\
+    if block ^1 ^1 ^-1 smooth_stone_slab \\
+    if block ^-1 ^2 ^-1 smooth_stone_slab \\
+    if block ^-1 ^3 ^1 smooth_stone_slab \\
+    if block ^1 ^4 ^1 smooth_stone_slab \\
     if block ^1 ^5 ^-1 smooth_stone_slab[type=bottom] \\
     run tag @s add B
 execute as @e[tag=M] at @s \\
     if block ^-1 ^ ^1 smooth_stone_slab[type=bottom] \\
-    if block ^-1 ^1 ^-1 smooth_stone_slab[type=bottom] \\
-    if block ^1 ^2 ^-1 smooth_stone_slab[type=bottom] \\
-    if block ^1 ^3 ^1 smooth_stone_slab[type=bottom] \\
-    if block ^-1 ^4 ^1 smooth_stone_slab[type=bottom] \\
+    if block ^-1 ^1 ^-1 smooth_stone_slab \\
+    if block ^1 ^2 ^-1 smooth_stone_slab \\
+    if block ^1 ^3 ^1 smooth_stone_slab \\
+    if block ^-1 ^4 ^1 smooth_stone_slab \\
     if block ^-1 ^5 ^-1 smooth_stone_slab[type=bottom] \\
     run tag @s add B
 
 # break if bedrock reached
-execute at @e[tag=M,limit=1] if block ~ ~ ~ bedrock run scoreboard players add $$c sh 1
+execute at @e[tag=M] if block ~ ~ ~ bedrock run scoreboard players add $$c sh 1
 # break if bottom of starter was found
-execute if entity @e[tag=B] run scoreboard players add $$c sh 1
+execute as @e[tag=B] run scoreboard players add $$c sh 1
 # break if markers were unloaded
 execute unless entity @e[tag=M] run scoreboard players add $$c sh 1
 
-execute if score $$c sh matches 1.. run data remove storage pk I[1]
-execute if score $$c sh matches 1.. run data modify storage pk I[0] set value []
-
-execute positioned as @e[tag=M,limit=1] run tp @e[tag=M] ~ ~-1 ~
-
----
+execute unless score $$c sh matches 1.. run data modify storage pk I[0] set from storage pk J
 
 execute unless entity @e[tag=B] run say Stronghold starter not found
 execute at @e[tag=B] run fill ~-1 ~-1 ~-1 ~1 ~-1 ~1 stone_bricks
 execute at @e[tag=B] run say Done! Teleporting to stronghold starter.
-execute at @e[tag=B,limit=1] run tp @p ~0.5 ~ ~0.5 ~ ~
+execute at @e[tag=B,limit=1] run tp @p ~.5 ~ ~.5 ~ ~
 gamerule fallDamage true
 
 # cleanup
