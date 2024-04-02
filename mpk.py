@@ -90,10 +90,11 @@ execute if data storage pk C[] run data modify storage pk I prepend from storage
 execute if data storage pk {C:[]} run data modify storage pk I[0] set value []
 
 # break barrels, tag triggers
-setblock 8 ~ 8 chest{CustomName:"$chest_name"}
+setblock 8 ~ 8 chest{CustomName:$chest_name}
 data modify block 8 ~ 8 Items set from storage pk C[0]
 setblock 8 ~ 8 air destroy
-execute positioned 8 ~ 8 run kill @e[type=item,distance=..1,nbt={Item:{id:"minecraft:chest",tag:{display:{Name:"$chest_name"}}}}]
+kill @e[distance=..16,nbt={Item:{tag:{display:{Name:$chest_name}}}}]
+kill @e[distance=..16,nbt={Item:{tag:{display:{Name:$expanded_chest_name}}}}]
 execute positioned 8 ~ 8 run tag @e[type=item,distance=..1] add T
 data remove storage pk C[0]
 
@@ -188,10 +189,11 @@ execute at @p align xz run tp @p ~.5 ~ ~.5
 data modify storage pk I prepend from storage pk I[0]
 
 # reify items from C[0]
-execute at @p run setblock ~ ~ ~ chest{CustomName:"$chest_name"}
+execute at @p run setblock ~ ~ ~ chest{CustomName:$chest_name}
 execute at @p run data modify block ~ ~ ~ Items set from storage pk C[0]
 execute at @p run setblock ~ ~ ~ air destroy
-execute at @p run kill @e[type=item,distance=..4,nbt={Item:{id:"minecraft:chest",tag:{display:{Name:"$chest_name"}}}}]
+kill @e[limit=1,nbt={Item:{tag:{display:{Name:$chest_name}}}}]
+kill @e[limit=1,nbt={Item:{tag:{display:{Name:$expanded_chest_name}}}}]
 
 # if C[0] has an item with the randomize marker, cache them in R...
 data remove storage pk R
@@ -351,7 +353,8 @@ execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Item.t
 execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Potion.tag.S
 kill @e[tag=P]
 """).substitute(
-    chest_name=escape('{"text":"."}', 'd'),
+    chest_name='\'"."\'',
+    expanded_chest_name='\'{"text":"."}\'',
 ))
 
 
