@@ -26,7 +26,7 @@ def compile_spu_program(prog):
     seqs = [[]]
     for line in prog.split('\n'):
         line = line.strip()
-        if line == '---':
+        if line.startswith('---'):
             seqs.append([])
         elif line and line[:1] != '#':
             seqs[-1].append(line)
@@ -277,7 +277,7 @@ data remove storage pk I[1]
 data remove storage pk I[1]
 
 # load blind mode program
-data modify storage pg _ set from storage pg ~.N
+data modify storage pg _ set from storage pg ~.N0
 data modify storage pk I[0] set from storage pg ~.Z[0]
 
 ---
@@ -560,8 +560,8 @@ scoreboard objectives remove sh
 """).substitute())
 
 
-NETHER_TERRAIN_PROGRAM = compile_spu_program(string.Template("""
-say Searching for blind location. Loading chunks...
+NETHER_TERRAIN_PROGRAM_SETUP = compile_spu_program(string.Template("""
+say Finding blind location...
 
 execute in the_nether run forceload add 0 0
 # set up air region for `if blocks`
@@ -569,64 +569,63 @@ execute in the_nether run fill 0 1 0 7 1 7 bedrock
 execute in the_nether run fill 0 0 0 7 0 7 air
 
 # summon ray
-execute in the_nether run summon armor_stand 0 96 0 {Tags:["R"],Passengers:[{id:armor_stand}]}
+execute in the_nether run summon armor_stand 0 96 0 {Tags:[R],Passengers:[{id:armor_stand}]}
+
+--- N0[1]
 
 # if chunk loading is async, wait for ray chunk to load
-data modify storage pk I prepend from storage pk I[0]
-execute if score ?A pk matches 0 run data merge storage pk {H:1}
-execute if entity @e[tag=R] run data remove storage pk I[1]
----
 
-# use UUID to give ray a random yaw, then summon another facing 180deg away
+execute if score ?A pk matches 0 run data merge storage pk {H:1}
+execute unless entity @e[tag=R] run data modify storage pk I insert 1 from storage pg ~.N0[1]
+
+--- N0[2]
+
+# use UUID to give ray a random yaw, then face the other 180deg away
 execute as @e[tag=R] store result entity @s Rotation[0] float 1 run data get entity @s UUID[0] .001
 execute as @e[tag=R] at @s run tp @e[type=armor_stand,tag=!R,distance=..1] ~ ~ ~ ~180 ~
-execute at @e[tag=R] as @e[type=armor_stand,distance=..1] run data merge entity @s {Tags:["R"],Marker:1b}
+execute at @e[tag=R] as @e[type=armor_stand,distance=..1] run data merge entity @s {Tags:[R],Marker:1}
 
+# start search
 scoreboard players set $$_ pk 1
-data remove storage pk J
-data modify storage pk J append from storage pk I[1]
-data modify storage pk J append from storage pk I[2]
-data modify storage pk J append from storage pk I[3]
-data modify storage pk J append from storage pk I[4]
-data modify storage pk J append from storage pk I[5]
+data modify storage pg _ set from storage pg ~.N1
+data modify storage pk I[0] set from storage pg ~.Z[0]
+""").substitute())
 
----
 
-title @p actionbar [{"text":"Searching terrain "}, {"score":{"objective":"pk","name":"$$_"}}, {"text":"/6"}]
+NETHER_TERRAIN_PROGRAM_SEARCH = compile_spu_program(string.Template("""
+title @p actionbar ["Searching terrain ",{"score":{"objective":"pk","name":"$$_"}},"/10"]
 
 # for each ray, create 4 markers at 24-block intervals at good blind coords
 execute at @e[tag=R] positioned ^ ^ ^184 run forceload add ~-4 ~-4 ~3 ~3
 execute at @e[tag=R] positioned ^ ^ ^208 run forceload add ~-4 ~-4 ~3 ~3
 execute at @e[tag=R] positioned ^ ^ ^232 run forceload add ~-4 ~-4 ~3 ~3
 execute at @e[tag=R] positioned ^ ^ ^256 run forceload add ~-4 ~-4 ~3 ~3
-execute at @e[tag=R] positioned ^ ^ ^184 run summon armor_stand ~ ~ ~ {Marker:1b,Tags:["M"]}
-execute at @e[tag=R] positioned ^ ^ ^208 run summon armor_stand ~ ~ ~ {Marker:1b,Tags:["M"]}
-execute at @e[tag=R] positioned ^ ^ ^232 run summon armor_stand ~ ~ ~ {Marker:1b,Tags:["M"]}
-execute at @e[tag=R] positioned ^ ^ ^256 run summon armor_stand ~ ~ ~ {Marker:1b,Tags:["M"]}
+execute at @e[tag=R] positioned ^ ^ ^184 run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+execute at @e[tag=R] positioned ^ ^ ^208 run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+execute at @e[tag=R] positioned ^ ^ ^232 run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+execute at @e[tag=R] positioned ^ ^ ^256 run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
 
-execute unless score ?A pk matches 0 run data remove storage pk I[1]
-
----
+--- N1[1]
 
 # if chunk loading is async, wait for all markers to load
+
+execute if score ?A pk matches 0 run data merge storage pk {H:1}
 execute store result $$m pk if entity @e[tag=M]
-execute if score $$m pk matches 8 run data remove storage pk I[0]
-data merge storage pk {H:1}
-data modify storage pk insert 1 from storage pk J[1]
+execute if score $$m pk matches ..7 run data modify storage pk I insert 1 from storage pg ~.N1[1]
 
----
-
--
-
-# try shifting markers down a few times, keep only those centered in an 8x1x8 air cuboid
+# prep for next loop
 scoreboard players reset $$n pk
-data modify storage pk I prepend from storage pk I[0]
+
+--- N1[2]
+
+# try shifting markers down a few times, tag those centered in an 8x1x8 air cuboid
+
 execute as @e[tag=M,tag=!A] at @s if blocks ~-4 ~ ~-4 ~3 ~ ~3 0 0 0 all run tag @s add A
 execute as @e[tag=M,tag=!A] at @s run tp @s ~ ~-8 ~
 scoreboard players add $$n pk 1
-execute unless score $$n pk matches 5 run data remove storage pk I[1]
+execute if score $$n pk matches ..4 run data modify storage pk I insert 1 from storage pg ~.N1[2]
 
----
+--- N1[3]
 
 # keep only markers at the top center of a 8x7x8 air cuboid
 execute as @e[tag=A] at @s \\
@@ -637,16 +636,16 @@ execute as @e[tag=A] at @s \\
     unless blocks ~-4 ~-4 ~-4 ~3 ~-3 ~3 ~-4 ~-6 ~-4 all \\
     unless blocks ~-4 ~-2 ~-4 ~3 ~-1 ~3 ~-4 ~-6 ~-4 all \\
     run kill @s
-execute unless entity @e[tag=A] run data modify storage pk I[0] set value []
+execute unless entity @e[tag=A] run data remove storage pk I[0][]
 
 # summon dummies around each marker in air
-execute at @e[tag=A] align xz run summon armor_stand ~.5 ~-5 ~.5 {Tags:["D"]}
-execute at @e[tag=D] run summon armor_stand ~ ~ ~-4 {Tags:["D"]}
-execute at @e[tag=D] run summon armor_stand ~-4 ~ ~1 {Tags:["D"]}
-execute at @e[tag=D] run summon armor_stand ~2 ~ ~2 {Tags:["D"]}
+execute at @e[tag=A] align xz run summon armor_stand ~.5 ~-5 ~.5 {Tags:[D]}
+execute at @e[tag=D] run summon armor_stand ~ ~ ~-4 {Tags:[D]}
+execute at @e[tag=D] run summon armor_stand ~-4 ~ ~1 {Tags:[D]}
+execute at @e[tag=D] run summon armor_stand ~2 ~ ~2 {Tags:[D]}
 
 # let the dummies fall, mark the best one that reaches the ground
-execute as @e[tag=D] run data merge entity @s {Motion:[0d,-10d,0d],Health:1f,Invisible:1b}
+execute as @e[tag=D] run data merge entity @s {Motion:[0d,-10d],Health:1,Invisible:1}
 data merge storage pk {H:1}
 data merge storage pk {H:1}
 data merge storage pk {H:1}
@@ -657,65 +656,67 @@ data merge storage pk {H:1}
 execute at @e[tag=A] positioned ~-4 40 ~-4 \\
     run tag @e[dx=8,dz=8,dy=99,sort=nearest,limit=1,tag=D,nbt={OnGround:1b}] add N
 
----
+--- N1[4]
 
 # clean up markers
 kill @e[tag=M]
+
 # rotate rays, increment loop index for next iteration
-execute as @e[tag=R] at @s run tp @s ~ ~ ~ ~69 ~
+execute as @e[tag=R] at @s run tp @s ~ ~ ~ ~66 ~
 scoreboard players add $$_ pk 1
 
 # if no good dummy is left, and we haven't tried all angles, try again
-data modify storage pg _ set from storage pk J
+data modify storage pg _ set from storage pg ~.N1
 execute unless entity @e[tag=N] \\
-    unless score $$_ pk matches 7 \\
+    unless score $$_ pk matches 11 \\
     run data modify storage pk I[0] set from storage pg ~.Z[0]
 
-say Done! Teleporting to blind location.
+# clean up rays, and all dummies except at most a good one
 kill @e[tag=R]
-data remove storage pg _
+tag @e[tag=N,limit=1] add NN
+kill @e[tag=D,tag=!NN]
 
-# if no good dummy is left, create fallback dummy and clear the area
-execute if entity @e[tag=N] run data modify storage pk I[0] set value []
-data storage remove pk I[1]
-execute in the_nether run forceload add 150 150
-execute in the_nether run summon armor_stand 150 64 150 {Tags:["N"]}
-execute at @e[tag=N] run setblock ~ ~-1 ~ netherrack
-execute at @e[tag=N] run fill ~ ~ ~ ~ ~1 ~ air
+# finish up if there's a good dummy
+data modify storage pg _ set from storage pg ~.N2
+execute as @e[tag=N] run data modify storage pk I[0] set from storage pg ~.Z[0]
 
----
+say No good terrain found!
+execute in the_nether run forceload remove all
+""").substitute())
 
-execute if score BM pk matches 3.. run data modify storage pk I[0] set value []
+
+NETHER_TERRAIN_PROGRAM_FINISH = compile_spu_program(string.Template("""
+execute if score BM pk matches 3.. run data remove storage pk I[0][]
 
 # build nether-side portal frame
 execute at @e[tag=N] run fill ~-1 ~1 ~-1 ~2 ~3 ~1 air
 execute at @e[tag=N] run fill ~-1 ~ ~ ~2 ~4 ~ obsidian
 execute at @e[tag=N] run fill ~ ~1 ~ ~1 ~3 ~ air
-# avoid teleporting into partial blocks like soul sand
-execute as @e[tag=N] at @s run tp @s ~ ~1.5 ~
 
----
+--- N2[1]
 
-tp @p @e[tag=N,limit=1]
+say Done! Teleporting...
+
+# add y-offset to avoid teleporting into partial blocks like soul sand
+execute at @e[tag=N] run tp @p ~ ~1.063 ~
+
+kill @e[tag=N]
 
 # wait for teleport before adding portal
 execute in overworld if entity @p[x=0] run data modify storage pk I prepend from storage pk I[0]
 data merge storage pk {H:1}
----
 
-# add portal blocks
-execute if score BM pk matches 2.. run data modify storage pk I[0] set value []
-execute at @e[tag=N] run fill ~ ~ ~ ~1 ~2 ~ nether_portal
+--- N2[2]
+
+execute in the_nether run forceload remove all
+
+# light portal
+execute if score BM pk matches 2.. run data remove storage pk I[0][]
+execute at @p run setblock ~ ~1 ~ fire
 
 # wait for teleport before allowing gamemode change
 execute in the_nether if entity @p[x=0] run data modify storage pk I prepend from storage pk I[0]
 data merge storage pk {H:1}
----
-
-# cleanup
-kill @e[tag=D]
-
-execute in the_nether run forceload remove all
 """).substitute())
 
 
@@ -916,7 +917,9 @@ def main():
         'L0': '{S:%s,O:%s,N:%s}' % (STRONGHOLD_SUBROUTINES[0], LOCATE_OVERWORLD_SUBROUTINES[0], LOCATE_NETHER_SUBROUTINES[0]),
         'L1': '{S:%s,O:%s,N:%s}' % (STRONGHOLD_SUBROUTINES[1], LOCATE_OVERWORLD_SUBROUTINES[1], LOCATE_NETHER_SUBROUTINES[1]),
         'L2': '{S:%s,O:%s,N:%s}' % (STRONGHOLD_SUBROUTINES[2], LOCATE_OVERWORLD_SUBROUTINES[2], LOCATE_NETHER_SUBROUTINES[2]),
-        'N': NETHER_TERRAIN_PROGRAM,
+        'N0': NETHER_TERRAIN_PROGRAM_SETUP,
+        'N1': NETHER_TERRAIN_PROGRAM_SEARCH,
+        'N2': NETHER_TERRAIN_PROGRAM_FINISH,
         'W': WAITING_MODE_PROGRAM,
         'Z': UTIL_PROGRAMS,
     }.items())
