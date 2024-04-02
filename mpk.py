@@ -70,24 +70,21 @@ execute store success score ?A pk if block 0 -64 0 tuff
 execute store success score ?O pk if block 0 -64 0 mud
 
 # detect version's locate command, copy appropriate locate sequences into L0
-scoreboard players reset ?L2 pk
 execute store success score ?L2 pk run locate Fortress
 execute if score ?L2 pk matches 0 run data modify storage pg ~.L0 set from storage pg ~.L2
-scoreboard players reset ?L1 pk
 execute store success score ?L1 pk run locate fortress
 execute if score ?L1 pk matches 0 run data modify storage pg ~.L0 set from storage pg ~.L1
 
+data merge storage pk {T:[],C:[],B:{}}
+
 # track thrown triggers
-data remove storage pk T
 execute at @p as @e[type=item,distance=..32] run tag @s add T
 
 # save triggers from barrels
-data remove storage pk C
-execute as @e[tag=T,type=item,nbt={Item:{id:"minecraft:barrel"}}] \\
+execute as @e[tag=T,nbt={Item:{id:"minecraft:barrel"}}] \\
     run data modify storage pk C append from entity @s Item.tag.BlockEntityTag.Items
 
-execute if data storage pk C[] run data modify storage pk I prepend from storage pk I[0]
-execute if data storage pk {C:[]} run data modify storage pk I[0] set value []
+data modify storage pk J set from storage pk I[0]
 
 # break barrels, tag triggers
 setblock 8 ~ 8 chest{CustomName:$chest_name}
@@ -97,6 +94,8 @@ kill @e[distance=..16,nbt={Item:{tag:{display:{Name:$chest_name}}}}]
 kill @e[distance=..16,nbt={Item:{tag:{display:{Name:$expanded_chest_name}}}}]
 execute positioned 8 ~ 8 run tag @e[type=item,distance=..1] add T
 data remove storage pk C[0]
+
+execute if data storage pk C[] run data modify storage pk I[0] set from storage pk J
 
 ---
 
@@ -121,72 +120,58 @@ execute as @e[tag=I,nbt={Item:{id:"minecraft:white_shulker_box"}}] \\
     run data modify entity @s Item.tag.BlockEntityTag.Items append value {Slot:-1b}
 
 # save items from item containers
-data remove storage pk C
 execute as @e[tag=I] \\
     run data modify storage pk C append from entity @s Item.tag.BlockEntityTag.Items
 
-data remove storage pk B
-# save potion scripts
-execute as @e[\\
-    tag=T,type=item,\\
-    nbt={Item:{id:"minecraft:writable_book"}},\\
-    nbt=!{Item:{tag:{display:{Name:'{"text":"AUTO"}'}}}}\\
-    ] \\
-    run data modify storage pk B.P append from entity @s Item.tag
-# save auto scripts
-execute as @e\\
-    [tag=T,type=item,\\
-    nbt={Item:{id:"minecraft:writable_book",tag:{display:{Name:'{"text":"AUTO"}'}}\\
-    }}] \\
-    run data modify storage pk B.A append from entity @s Item.tag.pages
+# save potion scripts and auto scripts
+tag @e[tag=T,nbt={Item:{id:"minecraft:writable_book"}}] add TP
+tag @e[tag=TP,nbt={Item:{tag:{display:{Name:'{"text":"AUTO"}'}}}}] add TA
+execute as @e[tag=TP,tag=!TA] run data modify storage pk B.P append from entity @s Item.tag
+execute as @e[tag=TA] run data modify storage pk B.A append from entity @s Item.tag.pages
 
-execute if entity @e[tag=T] run data modify storage pk I[0] set value []
-say No triggers found!
-tellraw @p {\\
-    "text":"Visit the website for info!",\\
-    "color":"aqua",\\
-    "underlined":"true",\\
-    "clickEvent":{"action":"open_url","value":"http://mpk.knawk.net"}\\
-}
+execute unless entity @e[tag=T] run tellraw @p [\\
+    "No triggers found! ",\\
+    {\\
+        "text":"Visit the website for info!",\\
+        "color":"aqua",\\
+        "underlined":"true",\\
+        "clickEvent":{"action":"open_url","value":"http://mpk.knawk.net"}\\
+    }\\
+]
 
----
-
-execute if entity @e[tag=T] run clear @p
+execute at @e[tag=T] run clear @p
 kill @e[tag=T]
-
----
 
 # create potions from writable books
 
 execute if data storage pk B.P[] run data modify storage pk I prepend from storage pk I[0]
-execute unless data storage pk B.P[0] run data modify storage pk I[0] set value []
+execute unless data storage pk B.P[0] run data remove storage pk I[0][]
 
 # create item
-data modify storage pk B.i append value \\
-    {id:"lingering_potion",Count:1b,tag:{\\
-        CustomPotionColor:65535,HideFlags:32,display:{\\
-            Name:'{"text":"Unnamed Script"}',\\
-            Lore:['{"text":"MiniPracticeKit script"}']\\
+data modify storage pk C append value [{\\
+    id:"lingering_potion",\\
+    Count:1b,\\
+    tag:{\\
+        CustomPotionColor:65535,\\
+        HideFlags:255,\\
+        display:{\\
+            Name:'"(Unnamed)"',\\
+            Lore:['"MPK script"']\\
         }\\
-    }}
-execute store result storage pk B.i[-1].Slot byte 1 run scoreboard players get $$bp pk
-data modify storage pk B.i[-1].tag.S set from storage pk B.P[0].pages
-data modify storage pk B.i[-1].tag.display.Name set from storage pk B.P[0].display.Name
-
-scoreboard players add $$bp pk 1
+    }\\
+}]
+data modify storage pk C[-1][0].tag merge from storage pk B.P[0]
+execute store result storage pk C[-1][0].Slot byte 1 run scoreboard players get $$bp pk
 data remove storage pk B.P[0]
 
----
-
-# prepare to give potions to player
-data modify storage pk C append from storage pk B.i
+scoreboard players add $$bp pk 1
 
 ---
 
 # align player to ensure correct pickup order
 execute at @p align xz run tp @p ~.5 ~ ~.5
 
-data modify storage pk I prepend from storage pk I[0]
+data modify storage pk J set from storage pk I[0]
 
 # reify items from C[0]
 execute at @p run setblock ~ ~ ~ chest{CustomName:$chest_name}
@@ -206,12 +191,11 @@ execute at @p if data storage pk R[] \\
 data remove storage pk C[0]
 execute at @p run tag @e[type=item,distance=..4] add CI
 
-execute unless data storage pk C[] unless data storage pk R[] \\
-    run data remove storage pk I[1]
-
 # ...then insert the items from R individually to C in a random order
 execute if data storage pk R[] \\
-    run data modify storage pk I[0] set from storage pg ~.Z[2]
+    run data modify storage pk I prepend from storage pg ~.Z[2]
+
+execute if data storage pk C[] run data modify storage pk I[0] set from storage pk J
 
 ---
 
@@ -222,7 +206,7 @@ data merge storage pk {H:1}
 
 # locate BT
 
-execute unless data storage pk {T:["minecraft:heart_of_the_sea"]} run data modify storage pk I[0] set value []
+execute unless data storage pk {T:["minecraft:heart_of_the_sea"]} run data remove storage pk I[0][]
 execute if score ?A pk matches 0 run say Warning: locating buried treasure may take a while!
 data modify storage pk I[0] insert 1 from storage pg ~.L0.O[0][0]
 tellraw @p {"nbt":"O","storage":"pk","interpret":true}
@@ -231,7 +215,7 @@ tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 
 # locate shipwreck
 
-execute unless data storage pk {T:["minecraft:oak_boat"]} run data modify storage pk I[0] set value []
+execute unless data storage pk {T:["minecraft:oak_boat"]} run data remove storage pk I[0][]
 data modify storage pk I[0] insert 1 from storage pg ~.L0.O[1][0]
 tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 
@@ -239,7 +223,7 @@ tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 
 # locate monument
 
-execute unless data storage pk {T:["minecraft:prismarine"]} run data modify storage pk I[0] set value []
+execute unless data storage pk {T:["minecraft:prismarine"]} run data remove storage pk I[0][]
 data modify storage pk I[0] insert 1 from storage pg ~.L0.O[2][0]
 tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 
@@ -257,7 +241,7 @@ execute if data storage pk {T:["minecraft:gilded_blackstone"]} run data modify s
 execute \\
     unless data storage pk {T:["minecraft:blaze_rod"]} \\
     unless data storage pk {T:["minecraft:gilded_blackstone"]} \\
-    run data modify storage pk I[0] set value []
+    run data remove storage pk I[0][]
 
 # if `spreadplayers under` isn't available, prepare to tp to Nether via portal
 scoreboard players reset ?SP pk
@@ -272,32 +256,12 @@ data modify storage pk T append value "minecraft:netherrack"
 
 ---
 
-# go to blind coords
+# go to blind coords, stronghold, End, or Nether (high to low priority)
 
-execute unless data storage pk {T:["minecraft:obsidian"]} run data modify storage pk I[0] set value []
-# skip enter-stronghold and enter-dimension
-data remove storage pk I[1]
-data remove storage pk I[1]
-
-# load blind mode program
-data modify storage pg _ set from storage pg ~.N0
-data modify storage pk I[0] set from storage pg ~.Z[0]
-
----
-
-# enter stronghold
-
-execute unless data storage pk {T:["minecraft:end_portal_frame"]} run data modify storage pk I[0] set value []
-# skip enter-dimension
-data remove storage pk I[1]
-
-# load stronghold program
-data modify storage pg _ set from storage pg ~.S
-data modify storage pk I[0] set from storage pg ~.Z[0]
-
----
-
-# enter dimension (must appear after enter-stronghold)
+data remove storage pg _
+execute if data storage pk {T:["minecraft:end_portal_frame"]} run data modify storage pg _ set from storage pg ~.S
+execute if data storage pk {T:["minecraft:obsidian"]} run data modify storage pg _ set from storage pg ~.N0
+execute if data storage pg _ run data modify storage pk I[0] set from storage pg ~.Z[0]
 
 setblock 8 ~ 8 air
 execute if data storage pk {T:["minecraft:netherrack"]} run setblock 8 ~ 8 nether_portal
@@ -332,7 +296,8 @@ data modify storage pk I[0] set from storage pg ~.Z[0]
 kill @e[tag=V]
 forceload remove all
 forceload add 0 0
-scoreboard objectives remove pk dummy
+# reset scores, but leave the scoreboard available for scripts
+scoreboard players reset * pk
 gamerule announceAdvancements true
 
 ---
@@ -346,11 +311,11 @@ data merge storage pk {H:1}
 execute at @p run tag @e[type=potion,distance=..8] add P
 # this data moved from Potion to Item sometime between 1.15.2 and 1.16.1
 execute as @e[tag=P] \\
-    unless data entity @s Item.tag.S \\
-    unless data entity @s Potion.tag.S \\
+    unless data entity @s Item.tag.pages \\
+    unless data entity @s Potion.tag.pages \\
     run tag @s remove P
-execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Item.tag.S
-execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Potion.tag.S
+execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Item.tag.pages
+execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Potion.tag.pages
 kill @e[tag=P]
 """).substitute(
     chest_name='\'"."\'',
@@ -743,13 +708,13 @@ title @p subtitle {"text":"Please see instructions in chat."}
 execute as @p[tag=W,gamemode=!creative] run tag @s remove W
 execute if entity @p[tag=!W] run say Gamemode changed, exiting waiting mode.
 scoreboard players set $$_ pk 0
-execute if entity @p[tag=!W] run data modify storage pk I[0] set value []
+execute if entity @p[tag=!W] run data remove storage pk I[0][]
 
 # if player has teleported away, exit waiting mode
 execute at @p positioned 0 999999 0 run tag @p[distance=8..] remove W
 execute if entity @p[tag=!W] run say Teleport detected, sending to nearby terrain.
 scoreboard players set $$_ pk 16
-execute if entity @p[tag=!W] run data modify storage pk I[0] set value []
+execute if entity @p[tag=!W] run data remove storage pk I[0][]
 
 # maintain waiting position, loop
 execute as @p at @s run tp @s 0 999999 0
@@ -769,7 +734,7 @@ execute at @p run summon armor_stand ~ 0 ~ {Tags:["M"],Marker:1b,Invisible:1b}
 ---
 
 # enter chunk loading loop only if necessary
-execute unless score ?A pk matches 0 run data modify storage pk I[0] set value []
+execute unless score ?A pk matches 0 run data remove storage pk I[0][]
 
 # wait until chunks are loaded
 execute at @p \\
@@ -777,7 +742,7 @@ execute at @p \\
     if blocks ~-80 0 ~80 ~-80 0 ~80 ~-80 0 ~80 all \\
     if blocks ~80 0 ~-80 ~80 0 ~-80 ~80 0 ~-80 all \\
     if blocks ~80 0 ~80 ~80 0 ~80 ~80 0 ~80 all \\
-    run data modify storage pk I[0] set value []
+    run data remove storage pk I[0][]
 data merge storage pk {H:1}
 data modify storage pk I insert 1 from storage pg ~.W[3]
 
@@ -793,7 +758,7 @@ execute at @e[tag=M] run spreadplayers ~ ~ 0 72 under 84 false @p
 tag @p remove W
 
 # exit loop early if out of retries
-execute if score $$_ pk matches 0 run data modify storage pk I[0] set value []
+execute if score $$_ pk matches 0 run data remove storage pk I[0][]
 scoreboard players remove $$_ pk 1
 
 # try again if standing on nether bricks
@@ -859,7 +824,7 @@ data modify storage pk C prepend value [{Slot:0b}]
 data modify storage pk C[0][0] merge from storage pk R[0]
 
 data remove storage pk R[0]
-execute if data storage pk R[0] run data modify storage pk I[0] set from storage pg ~.Z[2]
+execute if data storage pk R[] run data modify storage pk I[0] set from storage pg ~.Z[2]
 
 """).substitute())
 
