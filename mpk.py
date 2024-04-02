@@ -8,6 +8,7 @@ TODO
 
 import re
 import string
+import sys
 
 
 def escape(s, quotes = ''):
@@ -863,7 +864,7 @@ execute if data storage pk R[0] run data modify storage pk I[0] set from storage
 MPK_LORE = '[\'{"text":"Created by ","extra":[{"text":"Knawk", "color":"aqua"}]}\']'
 
 
-def main():
+def give_mpk():
     # phase 3: build SPU
     phase3 = '[{}]'.format(','.join(f"'{escape(i, 's')}'" for i in [
         # always build SPU at (0, 0) to avoid duplicates.
@@ -940,6 +941,75 @@ def main():
         display,
     )
     print('give @p ' + phase0)
+
+
+def give_stronghold_portal_book():
+    commands = [
+        # wait for player teleport
+        "data merge storage pk {H:1}",
+
+        "execute at @p run summon area_effect_cloud ~ ~ ~ {Tags:[p],Marker:1}",
+        (
+            "execute as @e[tag=p] at @s"
+            # use player's yaw but not pitch
+            " rotated as @p rotated ~ 0"
+            # align to horizontal center of block
+            " positioned ^1 ^ ^5 align xz positioned ~.5 ~ ~.5"
+            " run tp @s ~ ~ ~ ~ ~"
+        ),
+        # adjust for other possible 5-way layout
+        (
+            "execute as @e[tag=p] at @s if block ^ ^2 ^6 smooth_stone_slab[type=double]"
+            " run tp @s ^2 ^ ^"
+        ),
+
+        # roll d13
+        "execute as @e[tag=p] store result score @s pk run data get entity @s UUID[0]",
+        "scoreboard players set !m pk 13",
+        "scoreboard players operation @e[tag=p] pk %= !m pk",
+
+        # set orientation and position
+        "execute as @e[tag=p,scores={pk=..4}] at @s run tp @s ~ ~ ~ ~90 ~",
+        "execute as @e[tag=p,scores={pk=1}] at @s run tp @s ^ ^ ^1",
+        "execute as @e[tag=p,scores={pk=2}] at @s run tp @s ^ ^ ^2",
+        "execute as @e[tag=p,scores={pk=3}] at @s run tp @s ^ ^ ^3",
+        "execute as @e[tag=p,scores={pk=4}] at @s run tp @s ^ ^ ^4",
+        "execute as @e[tag=p,scores={pk=5}] at @s run tp @s ^-2 ^ ^-1",
+        "execute as @e[tag=p,scores={pk=6}] at @s run tp @s ^-2 ^ ^",
+        "execute as @e[tag=p,scores={pk=7}] at @s run tp @s ^-2 ^ ^1",
+        "execute as @e[tag=p,scores={pk=8}] at @s run tp @s ^-2 ^ ^2",
+        "execute as @e[tag=p,scores={pk=9}] at @s run tp @s ^-3 ^ ^-1",
+        "execute as @e[tag=p,scores={pk=10}] at @s run tp @s ^-3 ^ ^",
+        "execute as @e[tag=p,scores={pk=11}] at @s run tp @s ^-3 ^ ^1",
+        "execute as @e[tag=p,scores={pk=12}] at @s run tp @s ^-3 ^ ^2",
+
+        # build portal
+        "execute at @e[tag=p] run fill ^2 ^-.5 ^ ^-1 ^3.5 ^ obsidian",
+        "execute at @e[tag=p] run fill ^1 ^.5 ^ ^ ^2.5 ^ air",
+        "execute at @e[tag=p] run setblock ^ ^ ^ fire",
+
+        # turn around with 50% chance
+        "execute as @e[tag=p] store result score @s pk run data get entity @s UUID[1]",
+        "execute as @e[tag=p,scores={pk=0..}] at @s run tp @s ~ ~ ~ ~180 ~",
+
+        "tp @p @e[tag=p,limit=1]",
+    ]
+    pages = f"pages:[{",".join('"' + escape(c, "d") + '"' for c in commands)}]"
+    name = "Name:'{\"text\":\"AUTO\"}'"
+    lore = "Lore:['{\"text\":\"Simulate double travel portal\"}']"
+    display = f"display:{{{name},{lore}}}"
+    print(f"give @p writable_book{{{pages},{display}}}")
+
+
+def main():
+    if len(sys.argv) == 1:
+        give_mpk()
+        return
+    cmd = sys.argv[1]
+    if cmd == "sh_portal":
+        give_stronghold_portal_book()
+    else:
+        print(f"unknown command {cmd}")
 
 
 if __name__ == '__main__':
