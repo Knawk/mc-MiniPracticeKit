@@ -117,7 +117,7 @@ tag @e[tag=T,nbt={Item:{id:"minecraft:yellow_shulker_box"}},sort=random,limit=1]
 
 # add randomize marker to white shulker boxes
 execute as @e[tag=I,nbt={Item:{id:"minecraft:white_shulker_box"}}] \\
-    run data modify entity @s Item.tag.BlockEntityTag.Items append value {Slot:-1b}
+    run data modify entity @s Item.tag.BlockEntityTag.Items append value {Slot:-1}
 
 # save items from item containers
 execute as @e[tag=I] \\
@@ -182,7 +182,7 @@ kill @e[limit=1,nbt={Item:{tag:{display:{Name:$expanded_chest_name}}}}]
 
 # if C[0] has an item with the randomize marker, cache them in R...
 data remove storage pk R
-execute at @p if data storage pk C[0][{Slot:-1b}] \\
+execute at @p if data storage pk C[0][{Slot:-1}] \\
     as @e[type=item,distance=..4,tag=!CI,sort=random] \\
     run data modify storage pk R append from entity @s Item
 execute at @p if data storage pk R[] \\
@@ -401,11 +401,11 @@ data merge storage sh {p:[0d,61d,0d]}
 
 # spawn markers
 # TODO optimize?
-summon armor_stand .0 0 .0 {Marker:1b,Tags:["M"]}
-summon armor_stand .0 0 .0 {Marker:1b,Tags:["M"],Rotation:[30f]}
-summon armor_stand .0 0 .0 {Marker:1b,Tags:["M"],Rotation:[60f]}
-summon armor_stand .0 0 .0 {Marker:1b,Tags:["M"],Rotation:[90f]}
-summon armor_stand .0 0 .0 {Marker:1b,Tags:["M"],Rotation:[120f]}
+summon armor_stand .0 0 .0 {Marker:1,Tags:[M]}
+summon armor_stand .0 0 .0 {Marker:1,Tags:[M],Rotation:[30f]}
+summon armor_stand .0 0 .0 {Marker:1,Tags:[M],Rotation:[60f]}
+summon armor_stand .0 0 .0 {Marker:1,Tags:[M],Rotation:[90f]}
+summon armor_stand .0 0 .0 {Marker:1,Tags:[M],Rotation:[120f]}
 
 # kill all but best marker
 data modify storage pk I[0] insert 1 from storage pg ~.L0.S[0][0]
@@ -455,7 +455,7 @@ say Stronghold found. Loading chunks...
 
 # teleport player
 gamerule fallDamage false
-setblock 8 ~ 8 end_gateway{ExitPortal:{X:0,Y:999999,Z:0},ExactTeleport:1b}
+setblock 8 ~ 8 end_gateway{ExitPortal:{Y:999999},ExactTeleport:1}
 execute store result block 8 ~ 8 ExitPortal.X int 1 run scoreboard players get $$X sh
 execute store result block 8 ~ 8 ExitPortal.Z int 1 run scoreboard players get $$Z sh
 data modify storage pk I[0] set from storage pg ~.Z[1]
@@ -472,10 +472,10 @@ execute if score ?A pk matches 0 run data modify storage pk I[0] set from storag
 ---
 
 # set up markers for search
-data merge entity @e[tag=M,limit=1] {Rotation:[0f],Tags:["M","MM"]}
-summon armor_stand ~ ~ ~ {Tags:["M"],Marker:1b,Rotation:[90f]}
-summon armor_stand ~ ~ ~ {Tags:["M"],Marker:1b,Rotation:[180f]}
-summon armor_stand ~ ~ ~ {Tags:["M"],Marker:1b,Rotation:[-90f]}
+data merge entity @e[tag=M,limit=1] {Rotation:[0f],Tags:[M,MM]}
+summon armor_stand ~ ~ ~ {Tags:[M],Marker:1,Rotation:[90f]}
+summon armor_stand ~ ~ ~ {Tags:[M],Marker:1,Rotation:[180f]}
+summon armor_stand ~ ~ ~ {Tags:[M],Marker:1,Rotation:[-90f]}
 execute at @e[tag=MM] run tp @e[tag=M] ~ ~ ~
 
 # wait 1gt to avoid maxCommandChainLength
@@ -517,7 +517,7 @@ execute unless score $$c sh matches 1.. run data modify storage pk I[0] set from
 execute unless entity @e[tag=B] run say Stronghold starter not found
 execute at @e[tag=B] run fill ~-1 ~-1 ~-1 ~1 ~-1 ~1 stone_bricks
 execute at @e[tag=B] run say Done! Teleporting to stronghold starter.
-execute at @e[tag=B,limit=1] run tp @p ~.5 ~ ~.5 ~ ~
+execute at @e[tag=B] run tp @p ~.5 ~ ~.5 ~ ~
 gamerule fallDamage true
 
 # cleanup
@@ -719,7 +719,7 @@ title @p reset
 
 execute at @p run forceload add ~ ~
 execute if score ?A pk matches 0 at @p run forceload add ~-80 ~-80 ~80 ~80
-execute at @p run summon armor_stand ~ 0 ~ {Tags:["M"],Marker:1b,Invisible:1b}
+execute at @p run summon armor_stand ~ 0 ~ {Tags:[M],Marker:1,Invisible:1}
 
 ---
 
@@ -739,7 +739,7 @@ data modify storage pk I insert 1 from storage pg ~.W[3]
 ---
 
 # prevent fall damage when async chunk loading is enabled
-effect give @p resistance 3 255
+effect give @p resistance 3 9
 
 # spreadplayers no matter how the player exited waiting mode
 execute at @e[tag=M] run spreadplayers ~ ~ 0 72 under 84 false @p
@@ -762,10 +762,10 @@ execute at @p[tag=!W] \\
 # try again if terrain isn't open enough (not enough air within 13x9x13)
 execute as @p[tag=!W] at @s store result score @s pk \\
     if blocks ~-6 ~ ~-6 ~6 ~8 ~6 ~-6 ~ ~-6 masked
-execute as @p[tag=!W,scores={pk=400..}] run tag @s add W
+tag @p[tag=!W,scores={pk=400..}] add W
 
 # loop if need to try again
-execute if entity @p[tag=W] run data modify storage pk I insert 1 from storage pg ~.W[4]
+execute as @p[tag=W] run data modify storage pk I insert 1 from storage pg ~.W[4]
 
 ---
 
@@ -789,7 +789,7 @@ execute if data storage pg _[0] run data modify storage pk I insert 1 from stora
 # Teleports the player through the portal block at (8, 0/-64, 8).
 -
 execute at @p run forceload add ~ ~
-execute at @p run summon armor_stand ~ ~1 ~ {Marker:1b,Invisible:1b,Tags:["Z"]}
+execute at @p run summon armor_stand ~ ~1 ~ {Marker:1,Invisible:1,Tags:[Z]}
 
 execute at @p align xyz run tp @p ~.5 ~ ~.5
 execute at @p if block 0 0 1 bedrock run clone 8 0 8 8 0 8 ~ ~ ~
@@ -826,9 +826,6 @@ execute unless entity @e[tag=Q] run data modify storage pk I[0] set from storage
 """).substitute())
 
 
-MPK_LORE = '[\'{"text":"Created by ","extra":[{"text":"Knawk", "color":"aqua"}]}\']'
-
-
 def give_mpk():
     # phase 3: build SPU
     phase3 = '[{}]'.format(','.join(f"'{escape(i, 's')}'" for i in [
@@ -840,36 +837,36 @@ def give_mpk():
         # clear any existing SPU, otherwise setblocks fail
         r'fill 0 ~-1 0 4 ~-1 1 bedrock',
         # SPU main loop
-        r'setblock 2 ~-1 0 chain_command_block[facing=east]{auto:1b,UpdateLastExecution:0b,Command:"%s"}'
+        r'setblock 2 ~-1 0 chain_command_block[facing=east]{auto:1,UpdateLastExecution:0,Command:"%s"}'
             % ('data modify block ~1 ~ ~ Command set from storage pk I[0][0]',),
-        r'setblock 3 ~-1 0 chain_command_block[facing=east]{auto:1b,UpdateLastExecution:0b,CustomName:"%s"}'
+        r'setblock 3 ~-1 0 chain_command_block[facing=east]{auto:1,UpdateLastExecution:0,CustomName:"%s"}'
             % (escape('{"text":"MPK","color":"aqua"}', 'd'),),
-        r'setblock 4 ~-1 0 chain_command_block[facing=south]{auto:1b,UpdateLastExecution:0b,Command:"%s"}'
+        r'setblock 4 ~-1 0 chain_command_block[facing=south]{auto:1,UpdateLastExecution:0,Command:"%s"}'
             % ('data modify storage pk O set from block ~-1 ~ ~ LastOutput',),
-        r'setblock 4 ~-1 1 chain_command_block[facing=west]{auto:1b,UpdateLastExecution:0b,Command:"%s"}'
+        r'setblock 4 ~-1 1 chain_command_block[facing=west]{auto:1,UpdateLastExecution:0,Command:"%s"}'
             % ('data remove storage pk I[0][0]',),
-        r'setblock 3 ~-1 1 chain_command_block[facing=west]{auto:1b,UpdateLastExecution:0b,Command:"%s"}'
+        r'setblock 3 ~-1 1 chain_command_block[facing=west]{auto:1,UpdateLastExecution:0,Command:"%s"}'
             % ('execute if data storage pk H run setblock ~-2 ~ ~-1 air',),
-        r'setblock 2 ~-1 1 chain_command_block[facing=west]{auto:1b,UpdateLastExecution:0b,Command:"%s"}'
+        r'setblock 2 ~-1 1 chain_command_block[facing=west]{auto:1,UpdateLastExecution:0,Command:"%s"}'
             % ('execute unless data storage pk I[0][] run data remove storage pk I[0]',),
-        r'setblock 1 ~-1 1 chain_command_block{auto:1b,UpdateLastExecution:0b,Command:"%s"}'
+        r'setblock 1 ~-1 1 chain_command_block{auto:1,UpdateLastExecution:0,Command:"%s"}'
             % ('execute unless data storage pk I[] run setblock ~ ~ ~-1 air',),
 
         # add trigger last, then run main program
-        r'setblock 0 ~-1 0 repeating_command_block[facing=east]{auto:1b,Command:"%s"}'
-            % ('execute if data storage pk I[0] run setblock ~1 ~ ~ chain_command_block[facing=east]{auto:1b,UpdateLastExecution:0b,Command:\'data remove storage pk H\'}',),
+        r'setblock 0 ~-1 0 repeating_command_block[facing=east]{auto:1,Command:"%s"}'
+            % ('execute if data storage pk I[0] run setblock ~1 ~ ~ chain_command_block[facing=east]{auto:1,UpdateLastExecution:0,Command:\'data remove storage pk H\'}',),
         r'data modify storage pk I set from entity @e[tag=C,limit=1] HandItems[0].tag.I',
     ]))
 
     # phase 2: set up 1gt execution of phase 3
     phase2 = '[{}]'.format(','.join(f"'{escape(i, 's')}'" for i in [
-        r'setblock ~ ~1 ~ chain_command_block[facing=up]{auto:1b,Command:"data remove entity @e[limit=1,tag=C] HandItems[0].tag.2[0]"}',
+        r'setblock ~ ~1 ~ chain_command_block[facing=up]{auto:1,Command:"data remove entity @e[limit=1,tag=C] HandItems[0].tag.2[0]"}',
         r'gamerule commandBlockOutput false',
-        r'execute in overworld run summon armor_stand ~ 0 ~ {Tags:["V"],Marker:1b}',
+        r'execute in overworld run summon armor_stand ~ 0 ~ {Tags:[V],Marker:1}',
         r'execute as @e[tag=V] at @s unless block ~ ~ ~ bedrock run tp @s ~ -64 ~',
-        r'execute at @e[tag=V] run fill ~ ~1 ~ ~15 ~1 ~ chain_command_block{auto:1b}',
-        r'execute at @e[tag=V] run fill ~ ~1 ~1 ~15 ~1 ~1 chain_command_block{auto:1b,Command:"data remove entity @e[tag=C,limit=1] HandItems[0].tag.3[0]"}',
-        r'execute at @e[tag=V] run fill ~ ~1 ~2 ~15 ~1 ~2 command_block{auto:1b,Command:"data modify block ~ ~ ~-2 Command set from entity @e[tag=C,limit=1] HandItems[0].tag.3[0]"}',
+        r'execute at @e[tag=V] run fill ~ ~1 ~ ~15 ~1 ~ chain_command_block{auto:1}',
+        r'execute at @e[tag=V] run fill ~ ~1 ~1 ~15 ~1 ~1 chain_command_block{auto:1,Command:"data remove entity @e[tag=C,limit=1] HandItems[0].tag.3[0]"}',
+        r'execute at @e[tag=V] run fill ~ ~1 ~2 ~15 ~1 ~2 command_block{auto:1,Command:"data modify block ~ ~ ~-2 Command set from entity @e[tag=C,limit=1] HandItems[0].tag.3[0]"}',
     ]))
 
     # phase 1: set up 1cmd/gt execution of phase 2, load programs into carrier
@@ -899,9 +896,9 @@ def give_mpk():
     phase0_tag = '{auto:1b,Command:\'execute unless entity @e[tag=C,distance=..1.5] unless entity @e[type=falling_block,distance=..1.5] run summon falling_block ~ ~.5 ~ %s\'}' % (escape(phase1, 's'),)
     display = '{Name:\'%s\',Lore:%s}' % (
         '{"text":"MiniPracticeKit v0.5","bold":true,"italic":false,"color":"aqua"}',
-        MPK_LORE,
+        '[\'["Created by ",{"text":"Knawk","color":"aqua"}]\']',
     )
-    phase0 = 'repeating_command_block{CustomModelData:1,BlockStateTag:{facing:"up"},BlockEntityTag:%s,display:%s}' % (
+    phase0 = 'repeating_command_block{CustomModelData:1,BlockStateTag:{facing:up},BlockEntityTag:%s,display:%s}' % (
         phase0_tag,
         display,
     )
