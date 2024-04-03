@@ -905,6 +905,14 @@ def give_mpk():
     print('give @p ' + phase0)
 
 
+def give_command_book(commands, name, lore):
+    pages = f"pages:[{",".join('"' + escape(c, "d") + '"' for c in commands)}]"
+    name_data = f"Name:'{{\"text\":\"{name}\"}}'"
+    lore_data = f"Lore:['{{\"text\":\"{lore}\"}}']"
+    display_data = f"display:{{{name_data},{lore_data}}}"
+    print(f"give @p writable_book{{{pages},{display_data}}}")
+
+
 def give_stronghold_portal_book():
     commands = [
         # wait for player teleport
@@ -960,11 +968,62 @@ def give_stronghold_portal_book():
         "tp @p @e[tag=p,limit=1]",
         "kill @e[tag=p]",
     ]
-    pages = f"pages:[{",".join('"' + escape(c, "d") + '"' for c in commands)}]"
-    name = "Name:'{\"text\":\"AUTO\"}'"
-    lore = "Lore:['{\"text\":\"Simulate double travel portal\"}']"
-    display = f"display:{{{name},{lore}}}"
-    print(f"give @p writable_book{{{pages},{display}}}")
+    give_command_book(commands, "AUTO", "Simulate double travel portal")
+
+
+def give_surface_blind_book():
+    commands = [
+        # noop unless player in overworld
+        "execute in overworld unless entity @p[x=0] run say Must be in overworld to re-blind on surface!",
+        "execute in overworld unless entity @p[x=0] run data remove storage pk I[0][]",
+
+        "say Re-blinding on surface!",
+
+        # break existing nearby portals
+        "execute at @p run fill ~-16 ~-16 ~-16 ~15 ~15 ~15 air replace nether_portal",
+
+        # spread out 16 probes on surface, wait a few ticks to finish tp-ing
+        "execute at @p run summon armor_stand ~ ~ ~ {Marker:1,Tags:[p]}",
+        "execute at @p run summon armor_stand ~ ~ ~ {Marker:1,Tags:[p]}",
+        "execute at @e[tag=p] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[p]}",
+        "execute at @e[tag=p] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[p]}",
+        "execute at @e[tag=p] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[p]}",
+        "data merge storage pk {H:1}",
+        "execute at @p store success score !s pk run spreadplayers ~ ~ 6 24 false @e[tag=p]",
+        "data merge storage pk {H:1}",
+
+        # if spreadplayers fails, make midair portal platform
+        "execute if score !s pk matches 0 at @p run fill ~ 72 ~ ~2 72 ~1 obsidian",
+        "execute if score !s pk matches 0 at @p run tp @e[tag=p] ~1 73 ~",
+
+        # count non-air blocks in a 7x5x7 cuboid around each probe
+        (
+            "execute as @e[tag=p] at @s store result score @s pk"
+            " if blocks ~-3 ~ ~-3 ~3 ~4 ~3 ~-3 ~ ~-3 masked"
+        ),
+        # keep only one probe with minimal non-air blocks
+        "scoreboard players set !m pk 999",
+        "execute as @e[tag=p] run scoreboard players operation !m pk < @s pk",
+        "execute as @e[tag=p] unless score !m pk = @s pk run kill @s",
+        "tag @e[tag=p,sort=random,limit=1] add pp",
+        "kill @e[tag=p,tag=!pp]",
+
+        # try to face air so that portal placement is likely realistic
+        "execute as @e[tag=p] at @s unless block ^ ^ ^1 air run tp @s ~ ~ ~ ~90 0",
+        "execute as @e[tag=p] at @s unless block ^ ^ ^1 air run tp @s ~ ~ ~ ~90 0",
+        "execute as @e[tag=p] at @s unless block ^ ^ ^1 air run tp @s ~ ~ ~ ~90 0",
+
+        # build portal, wait a tick to avoid tick of suffocation
+        "execute at @e[tag=p] run fill ^ ^-.5 ^-1 ^ ^3.5 ^2 obsidian",
+        "execute at @e[tag=p] run fill ^ ^.5 ^ ^ ^2.5 ^1 air",
+        "execute at @e[tag=p] run setblock ^ ^ ^ fire",
+        "data merge storage pk {H:1}",
+
+        # teleport player, remove probe
+        "execute at @e[tag=p] run tp @p ~ ~ ~ ~90 ~",
+        "kill @e[tag=p]",
+    ]
+    give_command_book(commands, "Surface Blind", "Re-blind on surface")
 
 
 def main():
@@ -974,6 +1033,8 @@ def main():
     cmd = sys.argv[1]
     if cmd == "sh_portal":
         give_stronghold_portal_book()
+    if cmd == "surface":
+        give_surface_blind_book()
     else:
         print(f"unknown command {cmd}")
 
