@@ -685,25 +685,25 @@ tag @p add W
 gamemode creative @p
 execute in the_nether run tp @p 0 999999 0
 
-say Entered teleport waiting mode.
-say Select desired coordinates above, then press Enter/Return to be teleported to nearby terrain.
-say Change your gamemode to cancel.
+say Click one of the coordinates above and press Enter/Return to teleport nearby.
+say Change gamemode to exit.
 
-title @p times 0 2147483647 0
-title @p title {"text":"Waiting..."}
-title @p subtitle {"text":"Please see instructions in chat."}
+title @p times 0 60 0
 
 ---
 
+title @p title "Waiting..."
+title @p subtitle "See instructions in chat."
+
 # if player is in stasis but changed gamemode, exit waiting mode
 execute as @p[tag=W,gamemode=!creative] run tag @s remove W
-execute if entity @p[tag=!W] run say Gamemode changed, exiting waiting mode.
+execute if entity @p[tag=!W] run say Gamemode changed, exiting.
 scoreboard players set $$_ pk 0
 execute if entity @p[tag=!W] run data remove storage pk I[0][]
 
 # if player has teleported away, exit waiting mode
 execute at @p positioned 0 999999 0 run tag @p[distance=8..] remove W
-execute if entity @p[tag=!W] run say Teleport detected, sending to nearby terrain.
+execute if entity @p[tag=!W] run say Teleporting to nearby terrain.
 scoreboard players set $$_ pk 16
 execute if entity @p[tag=!W] run data remove storage pk I[0][]
 
@@ -715,7 +715,6 @@ data merge storage pk {H:1}
 ---
 
 # cleanup
-title @p clear
 title @p reset
 
 execute at @p run forceload add ~ ~
