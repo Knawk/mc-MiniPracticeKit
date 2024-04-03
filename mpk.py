@@ -534,17 +534,11 @@ execute in the_nether run forceload add 0 0
 execute in the_nether run fill 0 1 0 7 1 7 bedrock
 execute in the_nether run fill 0 0 0 7 0 7 air
 
-# summon ray
-execute in the_nether run summon armor_stand 0 96 0 {Tags:[R],Passengers:[{id:armor_stand}]}
+# summon ray and wait for it to load
+execute in the_nether run summon armor_stand 0 96 0 {Tags:[R,Q],Passengers:[{id:armor_stand}]}
+execute if score ?A pk matches 0 run data modify storage pk I[0] set from storage pg ~.Z[3]
 
 --- N0[1]
-
-# if chunk loading is async, wait for ray chunk to load
-
-execute if score ?A pk matches 0 run data merge storage pk {H:1}
-execute unless entity @e[tag=R] run data modify storage pk I insert 1 from storage pg ~.N0[1]
-
---- N0[2]
 
 # use UUID to give ray a random yaw, then face the other 180deg away
 execute as @e[tag=R] store result entity @s Rotation[0] float 1 run data get entity @s UUID[0] .001
