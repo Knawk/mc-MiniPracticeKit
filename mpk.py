@@ -340,10 +340,6 @@ execute as @e[tag=M] at @s positioned ^ ^ ^2048 positioned ~ ~ ~200 store result
 # /locate uses (8, 8) pre-1.19, and (0, 0) in 1.19+, but we have (4, 4), so we need an appropriate offset
 execute unless score ?O pk matches 0 as @e[tag=M] at @s positioned ~4 ~ ~4 store result score @s sh run $locate
 execute if score ?O pk matches 0 as @e[tag=M] at @s positioned ~-4 ~ ~-4 store result score @s sh run $locate
----
-# delay until marker is loaded
-execute if score ?A pk matches 0 unless entity @e[tag=M] run data merge storage pk {H:1}
-execute unless entity @e[tag=M] run data modify storage pk I insert 1 from storage pg ~.L0.S[3]
     """).substitute(locate=fmt('stronghold')))
     for fmt in LOCATE_FORMATS
 )
@@ -466,11 +462,12 @@ data modify storage pk I[0] set from storage pg ~.Z[1]
 
 ---
 
-# teleport marker, wait for chunks to load
+# teleport marker, wait for chunks to load if necessary
 execute store result storage sh p[0] double 1 run scoreboard players get $$X sh
 execute store result storage sh p[2] double 1 run scoreboard players get $$Z sh
 data modify entity @e[tag=M,limit=1] Pos set from storage sh p
-data modify storage pk I insert 1 from storage pg ~.L0.S[3]
+tag @e[tag=M] add Q
+execute if score ?A pk matches 0 run data modify storage pk I[0] set from storage pg ~.Z[3]
 
 ---
 
@@ -794,7 +791,7 @@ data modify storage pk I insert 1 from storage pg _[-1]
 data remove storage pg _[-1]
 execute if data storage pg _[0] run data modify storage pk I insert 1 from storage pg ~.Z[0]
 
----
+--- Z[1]
 
 # Teleports the player through the portal block at (8, 0/-64, 8).
 -
@@ -814,7 +811,7 @@ data merge storage pk {H:1}
 execute at @e[tag=Z] run setblock ~ ~-1 ~ air
 kill @e[tag=Z]
 
----
+--- Z[2]
 
 # Prepend each element of storage pk.R to pk.C as a singleton list;
 # e.g. if pk.R = [1, 2, 3] then pk.C will start with [[3], [2], [1], ...]
@@ -826,6 +823,13 @@ data modify storage pk C[0][0] merge from storage pk R[0]
 data remove storage pk R[0]
 execute if data storage pk R[] run data modify storage pk I[0] set from storage pg ~.Z[2]
 
+--- Z[3]
+
+# Delay until an entity tagged Q is loaded
+-
+
+data merge storage pk {H:1}
+execute unless entity @e[tag=Q] run data modify storage pk I[0] set from storage pg ~.Z[3]
 """).substitute())
 
 
@@ -915,8 +919,7 @@ def give_stronghold_portal_book():
     commands = [
         # wait for player teleport
         "data merge storage pk {H:1}",
-
-        "execute at @p run summon area_effect_cloud ~ ~ ~ {Tags:[p],Marker:1}",
+        "execute at @p run summon armor_stand ~ ~ ~ {Tags:[p,Q],Marker:1,Invisible:1}",
         (
             "execute as @e[tag=p] at @s"
             # use player's yaw but not pitch
@@ -925,6 +928,10 @@ def give_stronghold_portal_book():
             " positioned ^1 ^ ^5 align xz positioned ~.5 ~ ~.5"
             " run tp @s ~ ~ ~ ~ ~"
         ),
+
+        # wait for marker teleport in case it crosses into an unloaded chunk
+        "execute unless entity @e[tag=p] run data modify storage pk I prepend from storage pg ~.Z[3]",
+
         # adjust for other possible 5-way layout
         (
             "execute as @e[tag=p] at @s if block ^ ^2 ^6 smooth_stone_slab[type=double]"
@@ -961,6 +968,7 @@ def give_stronghold_portal_book():
         "execute as @e[tag=p,scores={pk=0..}] at @s run tp @s ~ ~ ~ ~180 ~",
 
         "tp @p @e[tag=p,limit=1]",
+        "kill @e[tag=p]",
     ]
     pages = f"pages:[{",".join('"' + escape(c, "d") + '"' for c in commands)}]"
     name = "Name:'{\"text\":\"AUTO\"}'"
