@@ -75,7 +75,8 @@ execute if score ?L2 pk matches 0 run data modify storage pg ~.L0 set from stora
 execute store success score ?L1 pk run locate fortress
 execute if score ?L1 pk matches 0 run data modify storage pg ~.L0 set from storage pg ~.L1
 
-data merge storage pk {T:[],C:[],B:{}}
+data merge storage pk {T:[],C:[]}
+data remove storage pk B
 
 # track thrown triggers
 execute at @p as @e[type=item,distance=..32] run tag @s add T
@@ -126,7 +127,7 @@ execute as @e[tag=I] \\
 # save potion scripts and auto scripts
 tag @e[tag=T,nbt={Item:{id:"minecraft:writable_book"}}] add TP
 tag @e[tag=TP,nbt={Item:{tag:{display:{Name:'{"text":"AUTO"}'}}}}] add TA
-execute as @e[tag=TP,tag=!TA] run data modify storage pk B.P append from entity @s Item.tag
+execute as @e[tag=TP,tag=!TA] run data modify storage pk B.P append from entity @s Item
 execute as @e[tag=TA] run data modify storage pk B.A append from entity @s Item.tag.pages
 
 execute unless entity @e[tag=T] run tellraw @p [\\
@@ -150,7 +151,7 @@ execute unless data storage pk B.P[0] run data remove storage pk I[0][]
 # create item
 data modify storage pk C append value [{\\
     id:"lingering_potion",\\
-    Count:1b,\\
+    Count:1,\\
     tag:{\\
         CustomPotionColor:65535,\\
         HideFlags:255,\\
@@ -160,7 +161,8 @@ data modify storage pk C append value [{\\
         }\\
     }\\
 }]
-data modify storage pk C[-1][0].tag merge from storage pk B.P[0]
+data modify storage pk C[-1][0].tag merge from storage pk B.P[0].tag
+data modify storage pk C[-1][0].Count set from storage pk B.P[0].Count
 execute store result storage pk C[-1][0].Slot byte 1 run scoreboard players get $$bp pk
 data remove storage pk B.P[0]
 
