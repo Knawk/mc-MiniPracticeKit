@@ -907,12 +907,20 @@ def give_mpk():
     print('give @p ' + phase0)
 
 
-def give_command_book(commands, name, lore):
+def give_command_book(commands, name, lore=None, color=None):
     pages = f"pages:[{",".join('"' + escape(c, "d") + '"' for c in commands)}]"
-    name_data = f"Name:'{{\"text\":\"{name}\"}}'"
-    lore_data = f"Lore:['{{\"text\":\"{lore}\"}}']"
-    display_data = f"display:{{{name_data},{lore_data}}}"
-    print(f"give @p writable_book{{{pages},{display_data}}}")
+
+    display_data = [f"Name:'{{\"text\":\"{name}\"}}'"]
+    if lore:
+        display_data.append(f"Lore:['{{\"text\":\"{lore}\"}}']")
+    display = f"display:{{{",".join(display_data)}}}"
+
+    tag_data = [pages, display]
+    if color:
+        tag_data.append(f"CustomPotionColor:{color}")
+    tag = f"{{{",".join(tag_data)}}}"
+
+    print("give @p writable_book" + tag)
 
 
 def give_post_bastion_gear_book():
@@ -960,7 +968,7 @@ def give_force_perch_book():
         "data merge entity @e[type=ender_dragon,limit=1] {DragonPhase:2}",
         "say Forcing perch!",
     ]
-    give_command_book(commands, "Force Perch", "Force the dragon to perch")
+    give_command_book(commands, "Force Perch", "Force the dragon to perch", str(0xCA0005))
 
 
 def give_stronghold_portal_book():
@@ -1073,7 +1081,7 @@ def give_surface_blind_book():
         "execute at @e[tag=p] run tp @p ~ ~ ~ ~90 ~",
         "kill @e[tag=p]",
     ]
-    give_command_book(commands, "Surface Blind", "Re-blind on surface")
+    give_command_book(commands, "Surface Blind", "Re-blind on surface", str(0xb12fff))
 
 
 def main():
