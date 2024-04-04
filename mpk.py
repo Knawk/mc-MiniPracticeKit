@@ -913,6 +913,54 @@ def give_command_book(commands, name, lore):
     print(f"give @p writable_book{{{pages},{display_data}}}")
 
 
+def give_post_bastion_gear_book():
+    commands = [
+        "scoreboard players set !m pk 3",
+
+        # give 2:00-3:00 of fire res
+        "execute store result score @p pk run data get entity @e[limit=1,sort=random] UUID[0]",
+        "scoreboard players operation @p pk %= !m pk",
+        "effect clear @p fire_resistance",
+        "effect give @p fire_resistance 120",
+        "effect give @p[scores={pk=1}] fire_resistance 150",
+        "effect give @p[scores={pk=2}] fire_resistance 180",
+
+        # give a piece of gold armor
+        "execute store result score @p pk run data get entity @e[limit=1,sort=random] UUID[1]",
+        "scoreboard players operation @p pk %= !m pk",
+        # pre-1.17
+        "replaceitem entity @p[scores={pk=0}] armor.head golden_helmet",
+        "replaceitem entity @p[scores={pk=1}] armor.chest golden_chestplate",
+        "replaceitem entity @p[scores={pk=2}] armor.legs golden_leggings",
+        # 1.17+
+        "item replace entity @p[scores={pk=0}] armor.head with golden_helmet",
+        "item replace entity @p[scores={pk=1}] armor.chest with golden_chestplate",
+        "item replace entity @p[scores={pk=2}] armor.legs with golden_leggings",
+
+        # maybe give boots (10% nothing, 20% ss1, 30% ss2, 40% ss3)
+        "scoreboard players set !m pk 10",
+        "execute store result score @p pk run data get entity @e[limit=1,sort=random] UUID[2]",
+        "scoreboard players operation @p pk %= !m pk",
+        # pre-1.17
+        "replaceitem entity @p[scores={pk=1..}] armor.feet iron_boots{Enchantments:[{id:soul_speed,lvl:1}]}",
+        "replaceitem entity @p[scores={pk=3..}] armor.feet iron_boots{Enchantments:[{id:soul_speed,lvl:2}]}",
+        "replaceitem entity @p[scores={pk=6..}] armor.feet iron_boots{Enchantments:[{id:soul_speed,lvl:3}]}",
+        # 1.17+
+        "item replace entity @p[scores={pk=1..}] armor.feet with iron_boots{Enchantments:[{id:soul_speed,lvl:1}]}",
+        "item replace entity @p[scores={pk=3..}] armor.feet with iron_boots{Enchantments:[{id:soul_speed,lvl:2}]}",
+        "item replace entity @p[scores={pk=6..}] armor.feet with iron_boots{Enchantments:[{id:soul_speed,lvl:3}]}",
+    ]
+    give_command_book(commands, "AUTO", "Give fire resistance and post-bastion armor")
+
+
+def give_force_perch_book():
+    commands = [
+        "data merge entity @e[type=ender_dragon,limit=1] {DragonPhase:2}",
+        "say Forcing perch!",
+    ]
+    give_command_book(commands, "Force Perch", "Force the dragon to perch")
+
+
 def give_stronghold_portal_book():
     commands = [
         # wait for player teleport
@@ -1031,9 +1079,13 @@ def main():
         give_mpk()
         return
     cmd = sys.argv[1]
-    if cmd == "sh_portal":
+    if cmd == "post_bastion":
+        give_post_bastion_gear_book()
+    elif cmd == "force_perch":
+        give_force_perch_book()
+    elif cmd == "sh_portal":
         give_stronghold_portal_book()
-    if cmd == "surface":
+    elif cmd == "surface":
         give_surface_blind_book()
     else:
         print(f"unknown command {cmd}")
