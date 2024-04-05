@@ -328,8 +328,8 @@ STRONGHOLD_SUBROUTINES = tuple(
     compile_spu_program(string.Template("""
 execute as @e[tag=M] at @s positioned ^ ^ ^2048 store result score @s sh run $locate
 ---
-execute as @e[tag=M] at @s positioned ^ ^ ^2048 positioned ~200 ~ ~ store result score $$dE sh run $locate
-execute as @e[tag=M] at @s positioned ^ ^ ^2048 positioned ~ ~ ~200 store result score $$dS sh run $locate
+execute at @e[tag=M] positioned ^ ^ ^2048 positioned ~200 ~ ~ store result score $$dE sh run $locate
+execute at @e[tag=M] positioned ^ ^ ^2048 positioned ~ ~ ~200 store result score $$dS sh run $locate
 ---
 # /locate uses (8, 8) pre-1.19, and (0, 0) in 1.19+, but we have (4, 4), so we need an appropriate offset
 execute unless score ?O pk matches 0 as @e[tag=M] at @s positioned ~4 ~ ~4 store result score @s sh run $locate
@@ -394,7 +394,6 @@ scoreboard players set ~400 sh 400
 data merge storage sh {p:[0d,61d,0d]}
 
 # spawn markers
-# TODO optimize?
 summon armor_stand .0 0 .0 {Marker:1,Tags:[M]}
 summon armor_stand .0 0 .0 {Marker:1,Tags:[M],Rotation:[30f]}
 summon armor_stand .0 0 .0 {Marker:1,Tags:[M],Rotation:[60f]}
@@ -427,9 +426,9 @@ scoreboard players remove $$dS sh 40000
 scoreboard players operation $$dS sh /= ~400 sh
 
 # get marker coords
-execute as @e[tag=M] at @s positioned ^ ^ ^2.048 run tp @s ~ ~ ~
-execute store result score $$X sh run data get entity @e[tag=M,limit=1] Pos[0] 1000
-execute store result score $$Z sh run data get entity @e[tag=M,limit=1] Pos[2] 1000
+execute as @e[tag=M] at @s run tp @s ^ ^ ^2.048
+execute as @e[tag=M] store result score $$X sh run data get entity @s Pos[0] 1000
+execute as @e[tag=M] store result score $$Z sh run data get entity @s Pos[2] 1000
 
 # SH coords = marker coords - offsets
 scoreboard players operation $$X sh -= $$dE sh
