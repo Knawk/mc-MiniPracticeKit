@@ -771,6 +771,9 @@ execute as @p[tag=W] run data modify storage pk I insert 1 from storage pg ~.W[4
 
 ---
 
+# face player towards structure
+execute as @p at @s facing entity @e[tag=M] eyes run tp @s ~ ~ ~ ~ 0
+
 execute at @e[tag=M] run forceload remove ~-80 ~-80 ~80 ~80
 kill @e[tag=M]
 """).substitute())
