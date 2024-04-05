@@ -1,11 +1,3 @@
-"""
-TODO
-
-- optimize program code loading
-- optimize thrown item ID -> program logic?
-"""
-
-
 import re
 import string
 import sys
