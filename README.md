@@ -56,7 +56,7 @@ then see the [How to customize MPK behavior](#how-to-customize-mpk-behavior) sec
 
 ### Updating MPK
 
-If you haven't customized any of the presets, you can update the MPK by simply following the instructions in the [Installing MPK for the first time](installing-mpk-for-the-first-time) section.
+If you haven't customized any of the presets, you can update the MPK by simply following the instructions in the [Installing MPK for the first time](#installing-mpk-for-the-first-time) section.
 
 If you want to just update the MPK command block without losing your presets, you can do the following:
 
