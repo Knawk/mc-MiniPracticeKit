@@ -250,17 +250,22 @@ data modify storage pk T append value "minecraft:netherrack"
 
 ---
 
-# go to blind coords, stronghold, End, or Nether (high to low priority)
+# go to End or Nether (including if going to blind coords)
+
+setblock 8 ~ 8 air
+execute if data storage pk {T:["minecraft:netherrack"]} run setblock 8 ~ 8 nether_portal
+execute if data storage pk {T:["minecraft:obsidian"]} run setblock 8 ~ 8 nether_portal
+execute if data storage pk {T:["minecraft:end_stone"]} run setblock 8 ~ 8 end_portal
+execute unless block 8 ~ 8 air run data modify storage pk I[0] set from storage pg ~.Z[1]
+
+---
+
+# go to blind coords or stronghold
 
 data remove storage pg _
 execute if data storage pk {T:["minecraft:end_portal_frame"]} run data modify storage pg _ set from storage pg ~.S
 execute if data storage pk {T:["minecraft:obsidian"]} run data modify storage pg _ set from storage pg ~.N0
 execute if data storage pg _ run data modify storage pk I[0] set from storage pg ~.Z[0]
-
-setblock 8 ~ 8 air
-execute if data storage pk {T:["minecraft:netherrack"]} run setblock 8 ~ 8 nether_portal
-execute if data storage pk {T:["minecraft:end_stone"]} run setblock 8 ~ 8 end_portal
-execute unless block 8 ~ 8 air run data modify storage pk I[0] set from storage pg ~.Z[1]
 
 ---
 
@@ -520,7 +525,10 @@ scoreboard objectives remove sh
 
 
 NETHER_TERRAIN_PROGRAM_SETUP = compile_spu_program(string.Template("""
-say Finding blind location...
+# remove Nether enter portal to let PortalCooldown decrease
+execute at @p run fill ~-16 ~-16 ~-16 ~15 ~15 ~15 air replace nether_portal
+
+title @p times 0 200 70
 
 execute in the_nether run forceload add 0 0
 # set up air region for `if blocks`
@@ -546,6 +554,7 @@ data modify storage pk I[0] set from storage pg ~.Z[0]
 
 
 NETHER_TERRAIN_PROGRAM_SEARCH = compile_spu_program(string.Template("""
+title @p title "Please wait..."
 title @p actionbar ["Searching terrain ",{"score":{"objective":"pk","name":"$$_"}},"/10"]
 
 # for each ray, create 4 markers at 24-block intervals at good blind coords
@@ -653,18 +662,21 @@ say Done! Teleporting...
 # add y-offset to avoid teleporting into partial blocks like soul sand
 execute at @e[tag=N] run tp @p ~ ~1.063 ~
 
+# bit of cleanup
 kill @e[tag=N]
+execute in the_nether run forceload remove all
 
-# wait for teleport before adding portal
-execute in overworld if entity @p[x=0] run data modify storage pk I prepend from storage pk I[0]
+# wait for teleport and PortalCooldown:0 before adding portal
+execute in the_nether unless entity @p[x=0,nbt={PortalCooldown:0}] run data modify storage pk I prepend from storage pk I[0]
 data merge storage pk {H:1}
 
 --- N2[2]
 
-execute in the_nether run forceload remove all
+title @p reset
+
+execute if score BM pk matches 2.. run data remove storage pk I[0][]
 
 # light portal
-execute if score BM pk matches 2.. run data remove storage pk I[0][]
 execute at @p run setblock ~ ~1 ~ fire
 
 # wait for teleport before allowing gamemode change
