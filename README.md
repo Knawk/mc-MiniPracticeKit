@@ -1,6 +1,7 @@
-# MiniPracticeKit v0.5
+# MiniPracticeKit v0.6
 
 MiniPracticeKit (MPK) is a versatile Minecraft speedrunning practice kit that fits in a single command block.
+
 You can use it to:
 
 - set your inventory (set items, random items, or a mix of both)
@@ -12,7 +13,11 @@ You can use it to:
 - locate structures (bastion, fortress, buried treasure, shipwreck, monument)
 - run your own commands on-demand (for example, to force the dragon to perch)
 
-See [Basic usage](#basic-usage) for download and usage instructions.
+**Skip to [How to install and use MiniPracticeKit](#how-to-install-and-use-minipracticekit) for download and usage instructions.**
+
+The MPK uses only vanilla Minecraft features: there's no need to install any mods or maintain a separate practice instance.
+Save it to a creative hotbar in your [Ranked](https://mcsrranked.com/) and main instances so you always have it on hand!
+It also works in Minecraft versions 1.15 to 1.20.4 - you can even directly copy your `hotbar.nbt` file between compatible instances and it'll just work.
 
 ## Demo videos (click to watch)
 
@@ -30,45 +35,39 @@ See [Basic usage](#basic-usage) for download and usage instructions.
 
 ([Full demo playlist](https://www.youtube.com/playlist?list=PL3xWUYc3vlEl4QRGBrZFiGGBLKh6V3KhS))
 
-The MPK uses only vanilla Minecraft features: there's no need to install any mods or maintain a separate practice instance.
-Save it to a creative hotbar in your main instances so you always have it on hand!
-It also works in Minecraft versions 1.15 to 1.20.4 - you can even directly copy your `hotbar.nbt` file between compatible instances and it'll just work.
+## How to install and use MiniPracticeKit
 
-## Basic usage
+### Installing MPK for the first time
 
-Download [`hotbar.nbt`](https://github.com/Knawk/mc-MiniPracticeKit/raw/master/hotbar.nbt) and place it in your `.minecraft` folder, while the instance isn't running.
-(Back up your existing `hotbar.nbt` file if you have one.)
-This will give you a saved Creative hotbar that includes the MPK, along with some presets for practicing modern 1.16.1 Any% RSG splits:
+1. If your Minecraft instance is open, close it.
+2. Go to your instance's `.minecraft` folder. If there's a `hotbar.nbt` file there, make a copy as backup.
+3. Download [`hotbar.nbt`](https://github.com/Knawk/mc-MiniPracticeKit/raw/master/hotbar.nbt) and place it directly in the `.minecraft` folder.
 
-- Nether enter (like [logwet's Noverworld mod](https://github.com/logwet/noverworld))
-- Bastion enter
-- Fortress enter
-- Nether exit / blind travel (like [logwet's Blinded mod](https://github.com/logwet/blinded))
-- Stronghold enter / Eye Spy
-- End enter
+Then start your Minecraft instance and continue to the [Using MPK and presets](#using-mpk-and-presets) section.
 
-To use the presets:
+### Using MPK and presets
 
 1. Create a new world in Creative mode.
-2. Load the first saved hotbar, which includes the MPK and the preset barrels.
-3. Drop the desired preset barrel, and place the MPK.
+2. Load the slot-1 saved hotbar (with default controls, hold `c` and press `1`). You should see several "preset barrels", and the MPK command block in the last slot.
+3. Drop the preset barrel for the split you want to play, and then place the MPK command block.
 
-See the "How to customize" section below to learn how to make your own preset barrels.
+If you want to edit the inventory in the presets, make other changes, or create your own preset barrels,
+then see the [How to customize MPK behavior](#how-to-customize-mpk-behavior) section.
 
-### Alternative: get the MPK by itself, without overriding saved hotbars
+### Updating MPK
 
-<details>
+If you haven't customized any of the presets, you can update the MPK by simply following the instructions in the [Installing MPK for the first time](#installing-mpk-for-the-first-time) section.
 
-<summary>(Click to expand)</summary>
+If you want to just update the MPK command block without losing your presets, you can do the following:
 
-1. Open or create a Minecraft world in creative mode.
+1. Open or create a Minecraft world in Creative mode.
 2. Give yourself a command block by running `/give @p command_block`, and place it.
-3. Copy the contents of [`give-mpk.txt`](/give-mpk.txt) and paste them into the command block, and click "Done".
-4. Activate the command block (for example, with a button) to get a MiniPracticeKit. You can save it to a Creative hotbar for easy access.
+3. Go to [give-mpk.txt](https://raw.githubusercontent.com/Knawk/mc-MiniPracticeKit/dev/give-mpk.txt), and copy all of the text to your clipboard.
+4. Paste the text you just copied into the command block, and click "Done".
+5. Activate the command block (for example, with a button) to receive the latest MPK command block (you can hover over the item to see the version number).
+6. Replace the old MPK command block with the new one, and save your new hotbar (with default controls, hold `c` and press `1`).
 
-</details>
-
-## How to customize the MPK's behavior
+## How to customize MPK behavior
 
 When you place the MiniPracticeKit, it looks for nearby "trigger items" to determine what actions to perform.
 They're designed to be easy to customize in-game so you don't need to download or learn any external tools.
@@ -80,7 +79,7 @@ The permitted trigger items and the corresponding actions are described below.
 |White Shulker Box|Gives the items in the shulker box to the player, in a random order.|To get a shulker box with items into your inventory, hold CTRL and press pick-block on a shulker box with the items you want.|
 |Brown/Red/Orange/Yellow Shulker Boxes|Picks one random shulker box of each color, and gives its items to the player.|To get a shulker box with items into your inventory, hold CTRL and press pick-block on a shulker box with the items you want.|
 |Netherrack, End Stone|Teleport the player to the corresponding dimension. (Netherrack = Nether, End Stone = End)|Incompatible with other teleport actions (and each other).|
-|Obsidian|Teleport the player to good first-ring blind coordinates. The number of obsidian items in the stack determine what happens at those coordinates. 1 item = build a portal and go through to the Overworld; 2 item = build a portal only; 3 item = don't build a portal.|Incompatible with other teleport actions. Can be slow because it searches for open nether terrain.|
+|Obsidian|Teleport the player to good first-ring blind coordinates. The number of obsidian items in the stack determine what happens at those coordinates. 1 item = build a portal and go through to the Overworld; 2 items = build a portal only; 3 items = don't build a portal.|Incompatible with other teleport actions. Can be slow because it searches for open nether terrain.|
 |End Portal Frame|Teleport the player to a stronghold's starter staircase.|Incompatible with other teleport actions. Always goes to the same stronghold in each world.|
 |Gilded Blackstone, Blaze Rod|Send in chat the coordinates of the related Nether structure(s) in each of the four close Nether quadrants, and put the player in teleport-waiting mode. In this mode, if you click on one of the coordinates in chat and press Enter/Return, then you will be teleported near those coordinates (at most 64 blocks away). (Gilded Blackstone = bastion, Blaze Rod = fortress)|Incompatible with other teleport actions. To exit teleport-waiting mode, simply change gamemode.|
 |Grass Block, Iron Sword, Map, Ender Eye|Set the player's gamemode to Creative, Survival, Adventure, or Spectator, respectively. (The triggers match the F3+F4 gamemode menu icons.)|Incompatible with each other.|
