@@ -230,6 +230,25 @@ execute if data storage pk {T:["minecraft:gilded_blackstone"]} run data modify s
 
 ---
 
+# go to Nether (including if going to blind coords or structures) or End
+
+# the Ranked client standardizes the first forced portal location,
+# so if we tp the player to the Nether directly and then they blind and return,
+# they'll be improperly brought back to a portal near the origin.
+# to avoid this we let the player take a portal to the Nether near the origin first,
+# and then later tp them to the real Nether destination.
+
+setblock 8 ~ 8 nether_portal
+execute unless data storage pk {T:["minecraft:netherrack"]} \\
+    unless data storage pk {T:["minecraft:obsidian"]} \\
+    unless data storage pk {T:["minecraft:blaze_rod"]} \\
+    unless data storage pk {T:["minecraft:gilded_blackstone"]} \\
+    run setblock 8 ~ 8 air
+execute if data storage pk {T:["minecraft:end_stone"]} run setblock 8 ~ 8 end_portal
+execute unless block 8 ~ 8 air run data modify storage pk I[0] set from storage pg ~.Z[1]
+
+---
+
 # go to nether structure(s)
 
 execute \\
@@ -247,16 +266,6 @@ execute if score ?SP pk matches 0 run data modify storage pk I[0] set from stora
 
 say Nether structure terrain teleportation is not supported in 1.15; sending you to Nether instead...
 data modify storage pk T append value "minecraft:netherrack"
-
----
-
-# go to End or Nether (including if going to blind coords)
-
-setblock 8 ~ 8 air
-execute if data storage pk {T:["minecraft:netherrack"]} run setblock 8 ~ 8 nether_portal
-execute if data storage pk {T:["minecraft:obsidian"]} run setblock 8 ~ 8 nether_portal
-execute if data storage pk {T:["minecraft:end_stone"]} run setblock 8 ~ 8 end_portal
-execute unless block 8 ~ 8 air run data modify storage pk I[0] set from storage pg ~.Z[1]
 
 ---
 
