@@ -5,7 +5,7 @@
 New features:
 
 - The Nether Exit preset now includes a potion to re-blind on the surface (for cave/underground blinds)
-- The Eye Spy preset now randomizes where in the initial 5-way it builds the double travel portal location
+- The Eye Spy preset now randomizes where in the initial 5-way it builds the double travel portal
 - The provided `hotbar.nbt` now includes an "Extras" chest with additional helpful AUTO and potion scripts, allowing you to:
   - equip an offhand item (cooked salmon by default)
   - give yourself an item with 50% chance (diamond sword by default)
