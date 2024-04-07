@@ -48,30 +48,49 @@ Then start your Minecraft instance and continue to the [Using MPK and presets](#
 ### Using MPK and presets
 
 1. Create a new world in Creative mode.
-2. Load the slot-1 saved hotbar (with default controls, hold `c` and press `1`). You should see several "preset barrels", and the MPK command block in the last slot.
-3. Drop the preset barrel for the split you want to play, and then place the MPK command block.
+2. Load the slot-1 saved hotbar (with default controls, hold `c` and press `1`). You should see several **"preset barrels"**, and the **MPK command block** in the last slot.
+3. Drop the **preset barrel** for the split you want to play, and then place the **MPK command block**.
 
-If you want to edit the inventory in the presets, make other changes, or create your own preset barrels,
+If you want to edit the inventory in the presets, make other changes, or create your own **preset barrels**,
 then see the [How to customize MPK behavior](#how-to-customize-mpk-behavior) section.
 
 ### Updating MPK
 
-If you haven't customized any of the presets, you can update the MPK by simply following the instructions in the [Installing MPK for the first time](#installing-mpk-for-the-first-time) section.
+If you haven't customized any of the **presets**, you can update the MPK by simply following the instructions in the [Installing MPK for the first time](#installing-mpk-for-the-first-time) section.
 
-If you want to just update the MPK command block without losing your presets, you can do the following:
+If you want to just update the **MPK command block** without losing your **presets**, you can do the following:
 
 1. Open or create a Minecraft world in Creative mode.
 2. Give yourself a command block by running `/give @p command_block`, and place it.
 3. Go to [give-mpk.txt](https://raw.githubusercontent.com/Knawk/mc-MiniPracticeKit/dev/give-mpk.txt), and copy all of the text to your clipboard.
 4. Paste the text you just copied into the command block, and click "Done".
-5. Activate the command block (for example, with a button) to receive the latest MPK command block (you can hover over the item to see the version number).
-6. Replace the old MPK command block with the new one, and save your new hotbar (with default controls, hold `c` and press `1`).
+5. Activate the command block (for example, with a button) to receive the latest **MPK command block** (you can hover over the item to see the version number).
+6. Replace the old **MPK command block** with the new one, and save your new hotbar (with default controls, hold `c` and press `1`).
 
 ## How to customize MPK behavior
 
-When you place the MiniPracticeKit, it looks for nearby "trigger items" to determine what actions to perform.
+When you activate the MiniPracticeKit, it looks for nearby **trigger items** to determine what actions to perform.
+For example, the **Chest trigger** tells the MPK to put the chest's contents in your inventory.
 They're designed to be easy to customize in-game so you don't need to download or learn any external tools.
-The permitted trigger items and the corresponding actions are described below.
+
+For example, here's how you can customize the inventory of one of the built-in **preset barrels**:
+
+1. Place the **preset barrel** that you want to customize.
+2. Take out the **Chest** and/or the **White Shulker Box** from the barrel, and place them in the world.
+3. Add/remove/change any items that you want from the **Chest** and/or **White Shulker Box**.
+   (Items in the **Chest** will be put in your inventory in exactly the same order, so you should put hotbar items there.
+   Items in the **White Shulker Box** will be put in your inventory in a randomized order, so this is where you'd put items that are disorganized in your inventory during a run.)
+4. Hold `CTRL` and press `pick-block` on the **Chest** and/or **White Shulker Box** to save the updated items to your hotbar. (`pick-block` is bound to the middle mouse button by default.) You'll know you did this right if you see `+NBT` when you hover over the items.
+5. Put the updated items into the **preset barrel** you placed earlier, and use `CTRL + pick-block` on the barrel to save it to your hotbar. (You can remove the old barrel now, if you like.)
+
+You're done! Next time you load this hotbar and use your updated **preset barrel** with the MPK, you'll receive the customized items in your inventory.
+
+Any time you want to customize behavior, you'll follow the same general workflow: place the **preset barrel** (step 1 above), change whatever you'd like (steps 2-4), then save the **preset barrel** back to your hotbar (step 5).
+For more details about what behaviors you can customize, continue reading in the [Triggers and actions](#triggers-and-actions) section.
+
+## Triggers and actions
+
+The MPK's supported **trigger items** and the corresponding actions are described below.
 
 |Trigger|Action|Notes|
 |-|-|-|
