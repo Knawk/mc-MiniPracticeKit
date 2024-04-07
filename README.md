@@ -81,7 +81,7 @@ For example, here's how you can customize the inventory of one of the built-in *
    (Items in the **Chest** will be put in your inventory in exactly the same order, so you should put hotbar items there.
    Items in the **White Shulker Box** will be put in your inventory in a randomized order, so this is where you'd put items that are disorganized in your inventory during a run.)
 4. Hold `CTRL` and press `pick-block` on the **Chest** and/or **White Shulker Box** to save the updated items to your hotbar. (`pick-block` is bound to the middle mouse button by default.) You'll know you did this right if you see `+NBT` when you hover over the items.
-5. Put the updated items into the **preset barrel** you placed earlier, and use `CTRL + pick-block` on the barrel to save it to your hotbar. (You can remove the old barrel now, if you like.)
+5. Put the updated items into the **preset barrel** you placed earlier, use `CTRL + pick-block` on the barrel to put it to your hotbar, and save your updated hotbar (with default controls, hold `c` and press `1`).
 
 You're done! Next time you load this hotbar and use your updated **preset barrel** with the MPK, you'll receive the customized items in your inventory.
 
