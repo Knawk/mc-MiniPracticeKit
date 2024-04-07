@@ -1099,19 +1099,59 @@ def give_surface_blind_book():
     give_command_book(commands, "Surface Blind", "Re-blind on surface", str(0xb12fff))
 
 
+def give_offhand_book():
+    commands = [
+        "# page 2 is for pre-1.17, page 3 is for 1.17+",
+        "replaceitem entity @p weapon.offhand cooked_salmon 5",
+        "item replace entity @p weapon.offhand with cooked_salmon 5",
+    ]
+    give_command_book(commands, "AUTO", "Set offhand item")
+
+
+def give_random_sword_book():
+    commands = [
+        "# configure the item you get on page 3",
+
+        "execute store result score ! pk run data get entity @e[limit=1,sort=random] UUID[0]",
+        "execute if score ! pk matches 0.. run give @p diamond_sword",
+    ]
+    give_command_book(commands, "AUTO", "Give diamond sword with 50% chance")
+
+
+def give_barters_book():
+    commands = [
+        "# configure barter count on page 2",
+        "data merge storage barters {count:18}",
+
+        'tellraw @p ["[",{"text":"MPK","color":"aqua"},"] Giving ",{"storage":"barters","nbt":"count"}," barters..."]',
+
+        "execute store result score @p pk run data get storage barters count",
+        "data modify storage pk J set from storage pk I[0]",
+        "loot give @p[scores={pk=1..}] loot gameplay/piglin_bartering",
+        "scoreboard players remove @p pk 1",
+        "execute as @p[scores={pk=1..}] run data modify storage pk I[0] set from storage pk J",
+    ]
+    give_command_book(commands, "AUTO", "Give piglin barters", str(0xead900))
+
+
+BOOKS = {
+    "post_bastion": give_post_bastion_gear_book,
+    "force_perch": give_force_perch_book,
+    "sh_portal": give_stronghold_portal_book,
+    "surface": give_surface_blind_book,
+    "offhand": give_offhand_book,
+    "random_sword": give_random_sword_book,
+    "barters": give_barters_book,
+}
+
+
 def main():
     if len(sys.argv) == 1:
         give_mpk()
         return
     cmd = sys.argv[1]
-    if cmd == "post_bastion":
-        give_post_bastion_gear_book()
-    elif cmd == "force_perch":
-        give_force_perch_book()
-    elif cmd == "sh_portal":
-        give_stronghold_portal_book()
-    elif cmd == "surface":
-        give_surface_blind_book()
+    if cmd in BOOKS:
+        BOOKS[cmd]()
     else:
         print(f"unknown command {cmd}")
 
