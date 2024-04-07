@@ -43,7 +43,7 @@ def compile_spu_program(prog):
 MAIN_PROGRAM = compile_spu_program(string.Template("""
 # setup
 
-tellraw @p [{"text":"MiniPracticeKit v0.6-dev activated!","color":"aqua","bold":true}]
+tellraw @p [{"text":"MiniPracticeKit v0.6 activated!","color":"aqua","bold":true}]
 scoreboard objectives add pk dummy
 gamerule announceAdvancements false
 
@@ -912,7 +912,7 @@ def give_mpk():
     # phase 0: load phase 1 command block
     phase0_tag = '{auto:1b,Command:\'execute unless entity @e[tag=C,distance=..1.5] unless entity @e[type=falling_block,distance=..1.5] run summon falling_block ~ ~.5 ~ %s\'}' % (escape(phase1, 's'),)
     display = '{Name:\'%s\',Lore:%s}' % (
-        '{"text":"MiniPracticeKit v0.6-dev","bold":true,"italic":false,"color":"aqua"}',
+        '{"text":"MiniPracticeKit v0.6","bold":true,"italic":false,"color":"aqua"}',
         '[\'["Created by ",{"text":"Knawk","color":"aqua"}]\']',
     )
     phase0 = 'repeating_command_block{CustomModelData:1,BlockStateTag:{facing:up},BlockEntityTag:%s,display:%s}' % (
