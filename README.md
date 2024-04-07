@@ -2,12 +2,12 @@
 
 MiniPracticeKit (MPK) is a versatile Minecraft speedrunning practice kit that fits in a single command block.
 
-You can use it to:
+You can use it to practice typical 1.16 Any% RSG splits with the built-in **presets**, or create your own presets to do any of the following and more:
 
 - set your inventory (set items, random items, or a mix of both)
 - set your gamemode and difficulty
 - teleport to the Nether/End
-- teleport to terrain near Nether structures
+- teleport to terrain near bastions/fortresses
 - teleport directly to the stronghold starter staircase
 - teleport to good blind travel coordinates (and optionally build a portal and/or go through to the Overworld)
 - locate structures (bastion, fortress, buried treasure, shipwreck, monument)
