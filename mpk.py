@@ -1038,6 +1038,17 @@ def give_stronghold_portal_book():
         "execute as @e[tag=p] store result score @s pk run data get entity @s UUID[1]",
         "execute as @e[tag=p,scores={pk=0..}] at @s run tp @s ~ ~ ~ ~180 ~",
 
+        # step out of the portal to avoid Ranked client lag spikes from forcing us through the portal
+        "execute as @e[tag=p] at @s if block ^ ^ ^1 air run tag @s add pf",
+        "execute as @e[tag=p] at @s if block ^ ^ ^1 cave_air run tag @s add pf",
+        "execute as @e[tag=p,tag=!pf] at @s if block ^ ^ ^-1 air run tag @s add pb",
+        "execute as @e[tag=p,tag=!pf] at @s if block ^ ^ ^-1 cave_air run tag @s add pb",
+        "execute as @e[tag=pf] at @s run tp @s ^ ^ ^1",
+        "execute as @e[tag=pb] at @s run tp @s ^ ^ ^-1 ~180 ~",
+        # make sure we have something to stand on
+        "execute at @e[tag=p] unless block ~ ~-1 ~ obsidian run setblock ~ ~-1 ~ stone_bricks",
+
+        # teleport and clean up
         "tp @p @e[tag=p,limit=1]",
         "kill @e[tag=p]",
     ]
