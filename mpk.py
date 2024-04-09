@@ -844,10 +844,12 @@ execute unless entity @e[tag=Q] run data modify storage pk I[0] set from storage
 
 BURIED_TREASURE_PROGRAM = compile_spu_program(string.Template("""
 title @p title "Please wait..."
-title @p subtitle "Locating buried treasure may be slow"
+scoreboard players reset $$_ pk
 
-# set goto point
+# start of loop
 data modify storage pk J set from storage pk I[0]
+scoreboard players add $$_ pk 1
+title @p actionbar ["Attempt ",{"score":{"objective":"pk","name":"$$_"}}]
 
 # clean up markers from last attempt
 kill @e[tag=M]
@@ -879,7 +881,7 @@ execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
 execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
 execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
 execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
-execute at @p store success score @p pk run spreadplayers ~ ~ 6 56 false @e[tag=M]
+execute at @p store success score @p pk run spreadplayers ~ ~ 3 52 false @e[tag=M]
 data merge storage pk {H:1}
 # try again if there's not enough land
 execute if score @p pk matches 0 run data modify storage pk I[0] set from storage pk J
@@ -888,7 +890,10 @@ execute if score @p pk matches 0 run data modify storage pk I[0] set from storag
 execute as @e[tag=M] at @s if block ~ ~-1 ~ #leaves run scoreboard players add @p pk 1
 execute if score @p pk matches ..2 run data modify storage pk I[0] set from storage pk J
 
-# tp player, or try again if there are no reasonable spawn points
+# try again if there are no reasonable spawn points
+# only consider locations within 50ed-loading distance of bt (approx)
+execute at @p positioned ~ 52 ~ run kill @e[tag=M,distance=60..]
+# avoid spawning on top of trees
 execute as @e[tag=M] at @s \\
     unless block ~ ~-1 ~ grass_block \\
     unless block ~ ~-1 ~ sand \\
