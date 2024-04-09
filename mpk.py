@@ -843,8 +843,8 @@ execute unless entity @e[tag=Q] run data modify storage pk I[0] set from storage
 
 
 BURIED_TREASURE_PROGRAM = compile_spu_program(string.Template("""
-say Locating buried treasure...
-execute if score ?A pk matches 0 run say This may take a while!
+title @p title "Please wait..."
+title @p subtitle "Locating buried treasure may be slow"
 
 # set goto point
 data modify storage pk J set from storage pk I[0]
@@ -861,8 +861,7 @@ data remove storage pk BT
 setblock 8 ~ 8 chest
 execute at @e[tag=M] positioned ^ ^ ^999999 run loot replace block 8 ~ 8 container.0 loot chests/shipwreck_map
 setblock 8 ~ 8 air destroy
-# TODO id might be different in 1.15
-execute as @e[distance=..16,nbt={Item:{id:'minecraft:filled_map'}}] run data modify storage pk BT set from entity @s Item.tag.Decorations[0]
+execute as @e[distance=..16,type=item] run data modify storage pk BT set from entity @s Item.tag.Decorations[0]
 kill @e[distance=..16,type=item]
 # try again if no BT was found
 execute unless data storage pk BT run data modify storage pk I[0] set from storage pk J
@@ -874,23 +873,20 @@ execute store result block 8 ~ 8 ExitPortal.Z int 1 run data get storage pk BT.z
 tag @p remove Z1
 execute unless entity @p[tag=Z1] run data modify storage pk I prepend from storage pg ~.Z[1]
 
-# spawn 23 more markers and spread near player
+# spawn 31 more markers and spread near player
 summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
-summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
 execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
 execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
 execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
-data merge storage pk {H:1}
-execute at @p store success score @p pk run spreadplayers ~ ~ 6 48 false @e[tag=M]
+execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+execute at @p store success score @p pk run spreadplayers ~ ~ 6 56 false @e[tag=M]
 data merge storage pk {H:1}
 # try again if there's not enough land
 execute if score @p pk matches 0 run data modify storage pk I[0] set from storage pk J
-say enough land
 
 # try again if there aren't enough trees. note that score @p pk must be 1 at this point
 execute as @e[tag=M] at @s if block ~ ~-1 ~ #leaves run scoreboard players add @p pk 1
 execute if score @p pk matches ..2 run data modify storage pk I[0] set from storage pk J
-say enough trees
 
 # tp player, or try again if there are no reasonable spawn points
 execute as @e[tag=M] at @s \\
@@ -898,19 +894,15 @@ execute as @e[tag=M] at @s \\
     unless block ~ ~-1 ~ sand \\
     run kill @s
 execute unless entity @e[tag=M] run data modify storage pk I[0] set from storage pk J
+
 effect give @p resistance 3 9
 tp @p @e[tag=M,sort=random,limit=1]
 
 ---
 
-data merge storage pk {H:1}
-say teleported player
-
 # cleanup
-# gamerule fallDamage true
-# effect clear @p levitation
+title @p reset
 kill @e[tag=M]
-say done
 """).substitute())
 
 
