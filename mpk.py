@@ -198,12 +198,10 @@ data merge storage pk {H:1}
 
 ---
 
-# locate BT
+# teleport to BT
 
-execute unless data storage pk {T:["minecraft:heart_of_the_sea"]} run data remove storage pk I[0][]
-execute if score ?A pk matches 0 run say Warning: locating buried treasure may take a while!
-data modify storage pk I[0] insert 1 from storage pg ~.L0.O[0][0]
-tellraw @p {"nbt":"O","storage":"pk","interpret":true}
+data modify storage pg _ set from storage pg ~.B
+execute if data storage pk {T:["minecraft:heart_of_the_sea"]} run data modify storage pk I[0] set from storage pg ~.Z[0]
 
 ---
 
@@ -355,7 +353,7 @@ execute if score ?O pk matches 0 as @e[tag=M] at @s positioned ~-4 ~ ~-4 store r
 
 LOCATE_OVERWORLD_SUBROUTINES = tuple(
     compile_spu_program(string.Template("""
-execute at @p run $bt
+-
 ---
 execute at @p run $ship
 ---
@@ -820,6 +818,7 @@ data merge storage pk {H:1}
 
 execute at @e[tag=Z] run setblock ~ ~-1 ~ air
 kill @e[tag=Z]
+tag @p add Z1
 
 --- Z[2]
 
@@ -840,6 +839,80 @@ execute if data storage pk R[] run data modify storage pk I[0] set from storage 
 
 data merge storage pk {H:1}
 execute unless entity @e[tag=Q] run data modify storage pk I[0] set from storage pg ~.Z[3]
+""").substitute())
+
+
+BURIED_TREASURE_PROGRAM = compile_spu_program(string.Template("""
+execute if score ?A pk matches 0 run say Can't teleport to buried treasure in this version!
+execute if score ?A pk matches 0 run data remove storage pk I[0][]
+
+title @p title "Please wait..."
+scoreboard players reset $$_ pk
+
+# start of loop
+data modify storage pk J set from storage pk I[0]
+scoreboard players add $$_ pk 1
+title @p actionbar ["Attempt ",{"score":{"objective":"pk","name":"$$_"}}]
+
+# clean up markers from last attempt
+kill @e[tag=M]
+
+# summon marker for search, iterate angle
+execute at @e[tag=V] run summon armor_stand 0 ~ 0 {Marker:1,Tags:[M]}
+scoreboard players add $$a pk 22249
+execute store result entity @e[tag=M,limit=1] Rotation[0] float .01 run scoreboard players get $$a pk
+
+# store BT coords
+data remove storage pk BT
+setblock 8 ~ 8 chest
+execute at @e[tag=M] positioned ^ ^ ^999999 run loot replace block 8 ~ 8 container.0 loot chests/shipwreck_map
+setblock 8 ~ 8 air destroy
+execute as @e[distance=..16,type=item] run data modify storage pk BT set from entity @s Item.tag.Decorations[0]
+kill @e[distance=..16,type=item]
+# try again if no BT was found
+execute unless data storage pk BT run data modify storage pk I[0] set from storage pk J
+
+# reset momentum and teleport player
+execute at @e[tag=V] run tp @p ~ ~2 ~
+setblock 8 ~ 8 end_gateway{ExitPortal:{Y:2},ExactTeleport:1}
+execute store result block 8 ~ 8 ExitPortal.X int 1 run data get storage pk BT.x
+execute store result block 8 ~ 8 ExitPortal.Z int 1 run data get storage pk BT.z
+tag @p remove Z1
+execute unless entity @p[tag=Z1] run data modify storage pk I prepend from storage pg ~.Z[1]
+
+# spawn 31 more markers and spread near player
+summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+execute at @p store success score @p pk run spreadplayers ~ ~ 3 52 false @e[tag=M]
+data merge storage pk {H:1}
+# try again if there's not enough land
+execute if score @p pk matches 0 run data modify storage pk I[0] set from storage pk J
+
+# try again if there aren't enough trees. note that score @p pk must be 1 at this point
+execute as @e[tag=M] at @s if block ~ ~-1 ~ #leaves run scoreboard players add @p pk 1
+execute if score @p pk matches ..2 run data modify storage pk I[0] set from storage pk J
+
+# try again if there are no reasonable spawn points
+# only consider locations within 50ed-loading distance of bt (approx)
+execute at @p positioned ~ 52 ~ run kill @e[tag=M,distance=60..]
+# avoid spawning on top of trees
+execute as @e[tag=M] at @s \\
+    unless block ~ ~-1 ~ grass_block \\
+    unless block ~ ~-1 ~ sand \\
+    run kill @s
+execute unless entity @e[tag=M] run data modify storage pk I[0] set from storage pk J
+
+effect give @p resistance 3 9
+tp @p @e[tag=M,sort=random,limit=1]
+
+---
+
+# cleanup
+title @p reset
+kill @e[tag=M]
 """).substitute())
 
 
@@ -901,6 +974,7 @@ def give_mpk():
         'N1': NETHER_TERRAIN_PROGRAM_SEARCH,
         'N2': NETHER_TERRAIN_PROGRAM_FINISH,
         'W': WAITING_MODE_PROGRAM,
+        'B': BURIED_TREASURE_PROGRAM,
         'Z': UTIL_PROGRAMS,
     }.items())
     program_carrier = '{id:armor_stand,Marker:1b,Invisible:1b,HandItems:[{Count:1b,id:egg,tag:{%s}}],Tags:["C"]}' % (programs,)
