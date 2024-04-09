@@ -803,6 +803,7 @@ execute if data storage pg _[0] run data modify storage pk I insert 1 from stora
 
 # Teleports the player through the portal block at (8, 0/-64, 8).
 -
+say running Z1
 execute at @p run forceload add ~ ~
 execute at @p run summon armor_stand ~ ~1 ~ {Marker:1,Invisible:1,Tags:[Z]}
 
@@ -818,6 +819,7 @@ data merge storage pk {H:1}
 
 execute at @e[tag=Z] run setblock ~ ~-1 ~ air
 kill @e[tag=Z]
+tag @p add Z1
 
 --- Z[2]
 
@@ -842,14 +844,14 @@ execute unless entity @e[tag=Q] run data modify storage pk I[0] set from storage
 
 
 BURIED_TREASURE_PROGRAM = compile_spu_program(string.Template("""
-say finding bt
-
-execute if score ?A pk matches 0 run say Warning: locating buried treasure may take a while!
+say Locating buried treasure...
+execute if score ?A pk matches 0 run say This may take a while!
 
 # summon marker for search, randomize angle
 execute at @e[tag=V] run summon armor_stand 0 ~ 0 {Marker:1,Tags:[M]}
 execute as @e[tag=M] store result entity @s Rotation[0] float 1 run data get entity @s UUID[0] .001
 
+# set goto point
 data modify storage pk J set from storage pk I[0]
 execute as @e[tag=M] at @s run tp @s ~ ~ ~ ~111.2 ~
 
@@ -861,6 +863,7 @@ setblock 8 ~ 8 air destroy
 say @e[distance=..16,type=item]
 # TODO id might be different in 1.15
 execute as @e[distance=..16,nbt={Item:{id:'minecraft:filled_map'}}] run data modify storage pk BT set from entity @s Item.tag.Decorations[0]
+# try again if no BT was found
 execute unless data storage pk BT run data modify storage pk I[0] set from storage pk J
 
 # teleport player
@@ -868,13 +871,26 @@ gamerule fallDamage false
 setblock 8 ~ 8 end_gateway{ExitPortal:{Y:80},ExactTeleport:1}
 execute store result block 8 ~ 8 ExitPortal.X int 1 run data get storage pk BT.x
 execute store result block 8 ~ 8 ExitPortal.Z int 1 run data get storage pk BT.z
-data modify storage pk I[0] set from storage pg ~.Z[1]
+tag @p remove Z1
+execute unless entity @p[tag=Z1] run data modify storage pk I prepend from storage pg ~.Z[1]
+
+# spawn 15 more markers and spread near player
+say spawning more markers
+summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
+data merge storage pk {H:1}
+execute at @p store success score @p pk run spreadplayers ~ ~ 6 48 false @e[tag=M]
+# try again if there's not enough land
+execute if score @p pk matches 0 run data modify storage pk I[0] set from storage pk J
 
 ---
 
 # cleanup
 
-kill @e[tag=M]
+# gamerule fallDamage true
+# kill @e[tag=M]
 """).substitute())
 
 
