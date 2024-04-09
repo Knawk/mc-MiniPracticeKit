@@ -198,12 +198,10 @@ data merge storage pk {H:1}
 
 ---
 
-# locate BT
+# teleport to BT
 
-execute unless data storage pk {T:["minecraft:heart_of_the_sea"]} run data remove storage pk I[0][]
-execute if score ?A pk matches 0 run say Warning: locating buried treasure may take a while!
-data modify storage pk I[0] insert 1 from storage pg ~.L0.O[0][0]
-tellraw @p {"nbt":"O","storage":"pk","interpret":true}
+data modify storage pg _ set from storage pg ~.B
+execute if data storage pk {T:["minecraft:heart_of_the_sea"]} run data modify storage pk I[0] set from storage pg ~.Z[0]
 
 ---
 
@@ -355,7 +353,9 @@ execute if score ?O pk matches 0 as @e[tag=M] at @s positioned ~-4 ~ ~-4 store r
 
 LOCATE_OVERWORLD_SUBROUTINES = tuple(
     compile_spu_program(string.Template("""
-execute at @p run $bt
+execute as @e[tag=M,scores={pk=0}] store success score @s pk \\
+    positioned ^ ^ ^999999 \\
+    run $bt
 ---
 execute at @p run $ship
 ---
@@ -843,6 +843,51 @@ execute unless entity @e[tag=Q] run data modify storage pk I[0] set from storage
 """).substitute())
 
 
+BURIED_TREASURE_PROGRAM = compile_spu_program(string.Template("""
+say finding bt
+
+execute if score ?A pk matches 0 run say Warning: locating buried treasure may take a while!
+
+# summon marker for search, randomize angle
+execute at @e[tag=V] run summon armor_stand 0 ~ 0 {Marker:1,Tags:[M]}
+execute as @e[tag=M] store result entity @s Rotation[0] float 1 run data get entity @s UUID[0] .001
+
+say @e[tag=M]
+
+data modify storage pk I[0] insert 2 from storage pg ~.L0.O[0][0]
+data modify storage pk J set from storage pk I[0]
+tellraw [{"nbt":"Rotation","entity":"@e[tag=M]"}," ",{"score":{"objective":"pk","name":"@e[tag=M]"}}]
+execute as @e[tag=M] at @s run tp @s ~ ~ ~ ~111.2 ~
+execute as @e[tag=M,scores={pk=0}] run data modify storage pk I[0] set from storage pk J
+
+---
+
+# store BT coords
+data remove storage pk BT
+setblock 8 ~ 8 chest
+execute at @e[tag=M] positioned ^ ^ ^999999 run loot replace block 8 ~ 8 container.0 loot chests/shipwreck_map
+setblock 8 ~ 8 air destroy
+say @e[distance=..16,type=item]
+# TODO id might be different in 1.15
+execute as @e[distance=..16,nbt={Item:{id:'minecraft:filled_map'}}] run data modify storage pk BT set from entity @s Item.tag.Decorations[0]
+execute unless data storage pk BT run say Buried treasure not found!
+execute unless data storage pk BT run data remove storage pk I[0][]
+
+# teleport player
+gamerule fallDamage false
+setblock 8 ~ 8 end_gateway{ExitPortal:{Y:999999},ExactTeleport:1}
+execute store result block 8 ~ 8 ExitPortal.X int 1 run data get storage pk BT.x
+execute store result block 8 ~ 8 ExitPortal.Z int 1 run data get storage pk BT.z
+data modify storage pk I[0] set from storage pg ~.Z[1]
+
+---
+
+# cleanup
+
+kill @e[tag=M]
+""").substitute())
+
+
 def give_mpk():
     # phase 3: build SPU
     phase3 = '[{}]'.format(','.join(f"'{escape(i, 's')}'" for i in [
@@ -901,6 +946,7 @@ def give_mpk():
         'N1': NETHER_TERRAIN_PROGRAM_SEARCH,
         'N2': NETHER_TERRAIN_PROGRAM_FINISH,
         'W': WAITING_MODE_PROGRAM,
+        'B': BURIED_TREASURE_PROGRAM,
         'Z': UTIL_PROGRAMS,
     }.items())
     program_carrier = '{id:armor_stand,Marker:1b,Invisible:1b,HandItems:[{Count:1b,id:egg,tag:{%s}}],Tags:["C"]}' % (programs,)
