@@ -353,9 +353,7 @@ execute if score ?O pk matches 0 as @e[tag=M] at @s positioned ~-4 ~ ~-4 store r
 
 LOCATE_OVERWORLD_SUBROUTINES = tuple(
     compile_spu_program(string.Template("""
-execute as @e[tag=M,scores={pk=0}] store success score @s pk \\
-    positioned ^ ^ ^999999 \\
-    run $bt
+-
 ---
 execute at @p run $ship
 ---
@@ -852,15 +850,8 @@ execute if score ?A pk matches 0 run say Warning: locating buried treasure may t
 execute at @e[tag=V] run summon armor_stand 0 ~ 0 {Marker:1,Tags:[M]}
 execute as @e[tag=M] store result entity @s Rotation[0] float 1 run data get entity @s UUID[0] .001
 
-say @e[tag=M]
-
-data modify storage pk I[0] insert 2 from storage pg ~.L0.O[0][0]
 data modify storage pk J set from storage pk I[0]
-tellraw [{"nbt":"Rotation","entity":"@e[tag=M]"}," ",{"score":{"objective":"pk","name":"@e[tag=M]"}}]
 execute as @e[tag=M] at @s run tp @s ~ ~ ~ ~111.2 ~
-execute as @e[tag=M,scores={pk=0}] run data modify storage pk I[0] set from storage pk J
-
----
 
 # store BT coords
 data remove storage pk BT
@@ -870,12 +861,11 @@ setblock 8 ~ 8 air destroy
 say @e[distance=..16,type=item]
 # TODO id might be different in 1.15
 execute as @e[distance=..16,nbt={Item:{id:'minecraft:filled_map'}}] run data modify storage pk BT set from entity @s Item.tag.Decorations[0]
-execute unless data storage pk BT run say Buried treasure not found!
-execute unless data storage pk BT run data remove storage pk I[0][]
+execute unless data storage pk BT run data modify storage pk I[0] set from storage pk J
 
 # teleport player
 gamerule fallDamage false
-setblock 8 ~ 8 end_gateway{ExitPortal:{Y:999999},ExactTeleport:1}
+setblock 8 ~ 8 end_gateway{ExitPortal:{Y:80},ExactTeleport:1}
 execute store result block 8 ~ 8 ExitPortal.X int 1 run data get storage pk BT.x
 execute store result block 8 ~ 8 ExitPortal.Z int 1 run data get storage pk BT.z
 data modify storage pk I[0] set from storage pg ~.Z[1]
