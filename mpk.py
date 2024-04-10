@@ -205,22 +205,6 @@ execute if data storage pk {T:["minecraft:heart_of_the_sea"]} run data modify st
 
 ---
 
-# locate shipwreck
-
-execute unless data storage pk {T:["minecraft:oak_boat"]} run data remove storage pk I[0][]
-data modify storage pk I[0] insert 1 from storage pg ~.L0.O[1][0]
-tellraw @p {"nbt":"O","storage":"pk","interpret":true}
-
----
-
-# locate monument
-
-execute unless data storage pk {T:["minecraft:prismarine"]} run data remove storage pk I[0][]
-data modify storage pk I[0] insert 1 from storage pg ~.L0.O[2][0]
-tellraw @p {"nbt":"O","storage":"pk","interpret":true}
-
----
-
 # locate bastions/fortresses
 
 execute if data storage pk {T:["minecraft:blaze_rod"]} run data modify storage pk I insert 1 from storage pg ~.L0.N[1]
@@ -347,22 +331,6 @@ execute at @e[tag=M] positioned ^ ^ ^2048 positioned ~ ~ ~200 store result score
 execute unless score ?O pk matches 0 as @e[tag=M] at @s positioned ~4 ~ ~4 store result score @s sh run $locate
 execute if score ?O pk matches 0 as @e[tag=M] at @s positioned ~-4 ~ ~-4 store result score @s sh run $locate
     """).substitute(locate=fmt('stronghold')))
-    for fmt in LOCATE_FORMATS
-)
-
-
-LOCATE_OVERWORLD_SUBROUTINES = tuple(
-    compile_spu_program(string.Template("""
--
----
-execute at @p run $ship
----
-execute at @p run $monument
-    """).substitute(
-        bt=fmt('buried_treasure'),
-        ship=fmt('shipwreck'),
-        monument=fmt('monument'),
-    ))
     for fmt in LOCATE_FORMATS
 )
 
@@ -967,9 +935,9 @@ def give_mpk():
         '3': phase3,
         'I': MAIN_PROGRAM,
         'S': STRONGHOLD_PROGRAM,
-        'L0': '{S:%s,O:%s,N:%s}' % (STRONGHOLD_SUBROUTINES[0], LOCATE_OVERWORLD_SUBROUTINES[0], LOCATE_NETHER_SUBROUTINES[0]),
-        'L1': '{S:%s,O:%s,N:%s}' % (STRONGHOLD_SUBROUTINES[1], LOCATE_OVERWORLD_SUBROUTINES[1], LOCATE_NETHER_SUBROUTINES[1]),
-        'L2': '{S:%s,O:%s,N:%s}' % (STRONGHOLD_SUBROUTINES[2], LOCATE_OVERWORLD_SUBROUTINES[2], LOCATE_NETHER_SUBROUTINES[2]),
+        'L0': '{S:%s,N:%s}' % (STRONGHOLD_SUBROUTINES[0], LOCATE_NETHER_SUBROUTINES[0]),
+        'L1': '{S:%s,N:%s}' % (STRONGHOLD_SUBROUTINES[1], LOCATE_NETHER_SUBROUTINES[1]),
+        'L2': '{S:%s,N:%s}' % (STRONGHOLD_SUBROUTINES[2], LOCATE_NETHER_SUBROUTINES[2]),
         'N0': NETHER_TERRAIN_PROGRAM_SETUP,
         'N1': NETHER_TERRAIN_PROGRAM_SEARCH,
         'N2': NETHER_TERRAIN_PROGRAM_FINISH,
