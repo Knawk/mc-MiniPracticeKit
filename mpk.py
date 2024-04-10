@@ -344,8 +344,8 @@ STRONGHOLD_SUBROUTINES = tuple(
     compile_spu_program(string.Template("""
 execute as @e[tag=M] at @s positioned ^ ^ ^2048 store result score @s sh run $locate
 ---
-execute at @e[tag=M] positioned ^ ^ ^2048 positioned ~200 ~ ~ store result score $$dE sh run $locate
-execute at @e[tag=M] positioned ^ ^ ^2048 positioned ~ ~ ~200 store result score $$dS sh run $locate
+execute at @e[tag=M] positioned ^ ^ ^2048 positioned ~200 ~ ~ store result score @e[tag=DE] sh run $locate
+execute at @e[tag=M] positioned ^ ^ ^2048 positioned ~ ~ ~200 store result score @e[tag=DS] sh run $locate
 ---
 # /locate uses (8, 8) pre-1.19, and (0, 0) in 1.19+, but we have (4, 4), so we need an appropriate offset
 execute unless score ?O pk matches 0 as @e[tag=M] at @s positioned ~4 ~ ~4 store result score @s sh run $locate
@@ -375,21 +375,28 @@ execute in the_nether positioned -1 ~ -1 run $fortress
 
 
 STRONGHOLD_PROGRAM = compile_spu_program(string.Template("""
-say Locating stronghold. This may take several seconds...
+say Locating stronghold...
 
 # setup
 forceload add -1 -1 0 0
 scoreboard objectives add sh dummy
-scoreboard players set ~16 sh 16
-scoreboard players set ~400 sh 400
-data merge storage sh {p:[0d,61d,0d]}
+scoreboard players set 16 sh 16
+scoreboard players set 400 sh 400
 
-# spawn markers
-summon armor_stand .0 0 .0 {Marker:1,Tags:[M]}
-summon armor_stand .0 0 .0 {Marker:1,Tags:[M],Rotation:[30f]}
-summon armor_stand .0 0 .0 {Marker:1,Tags:[M],Rotation:[60f]}
-summon armor_stand .0 0 .0 {Marker:1,Tags:[M],Rotation:[90f]}
-summon armor_stand .0 0 .0 {Marker:1,Tags:[M],Rotation:[120f]}
+# spawn search markers
+summon armor_stand .0 0 .0 {Tags:[A,M]}
+summon armor_stand .0 0 .0 {Tags:[A,M],Rotation:[30f]}
+summon armor_stand .0 0 .0 {Tags:[A,M],Rotation:[60f]}
+summon armor_stand .0 0 .0 {Tags:[A,M],Rotation:[90f]}
+summon armor_stand .0 0 .0 {Tags:[A,M],Rotation:[120f]}
+
+# spawn data armor stands: dE, dS, X, Z
+summon armor_stand 0 0 0 {Tags:[A,D,DE],Passengers:[\\
+    {id:armor_stand,Tags:[A,D,DS]},\\
+    {id:armor_stand,Tags:[A,P,PX]},\\
+    {id:armor_stand,Tags:[A,P,PZ]}\\
+]}
+execute as @e[tag=A] run data merge entity @s {Marker:1}
 
 # kill all but best marker
 data modify storage pk I[0] insert 1 from storage pg ~.L0.S[0][0]
@@ -402,55 +409,43 @@ data modify storage pk I insert 1 from storage pg ~.L0.S[1]
 
 ---
 
-scoreboard players operation $$D sh *= $$D sh
-scoreboard players operation $$dE sh *= $$dE sh
-scoreboard players operation $$dS sh *= $$dS sh
+# square distances
+execute as @e[tag=A] run scoreboard players operation @s sh *= @s sh
 
-# compute west offset from marker to SH
-scoreboard players operation $$dE sh -= $$D sh
-scoreboard players remove $$dE sh 40000
-scoreboard players operation $$dE sh /= ~400 sh
-
-# compute north offset from marker to SH
-scoreboard players operation $$dS sh -= $$D sh
-scoreboard players remove $$dS sh 40000
-scoreboard players operation $$dS sh /= ~400 sh
+# compute west/north offsets from marker to SH
+scoreboard players operation @e[tag=D] sh -= @e[tag=M] sh
+scoreboard players remove @e[tag=D] sh 40000
+scoreboard players operation @e[tag=D] sh /= 400 sh
 
 # get marker coords
 execute as @e[tag=M] at @s run tp @s ^ ^ ^2.048
-execute as @e[tag=M] store result score $$X sh run data get entity @s Pos[0] 1000
-execute as @e[tag=M] store result score $$Z sh run data get entity @s Pos[2] 1000
+execute as @e[tag=M] store result score @e[tag=PX] sh run data get entity @s Pos[0] 1000
+execute as @e[tag=M] store result score @e[tag=PZ] sh run data get entity @s Pos[2] 1000
 
 # SH coords = marker coords - offsets
-scoreboard players operation $$X sh -= $$dE sh
-scoreboard players operation $$Z sh -= $$dS sh
+scoreboard players operation @e[tag=PX] sh -= @e[tag=DE] sh
+scoreboard players operation @e[tag=PZ] sh -= @e[tag=DS] sh
 
 # get (4, 4)
-execute if score ?O pk matches 0 run scoreboard players add $$X sh 8
-execute if score ?O pk matches 0 run scoreboard players add $$Z sh 8
-scoreboard players operation $$X sh /= ~16 sh
-scoreboard players operation $$Z sh /= ~16 sh
-scoreboard players operation $$X sh *= ~16 sh
-scoreboard players operation $$Z sh *= ~16 sh
-scoreboard players add $$X sh 4
-scoreboard players add $$Z sh 4
+execute if score ?O pk matches 0 run scoreboard players add @e[tag=P] sh 8
+scoreboard players operation @e[tag=P] sh /= 16 sh
+scoreboard players operation @e[tag=P] sh *= 16 sh
+scoreboard players add @e[tag=P] sh 4
 
-say Stronghold found. Loading chunks...
+say Loading chunks...
 
 # teleport player
 gamerule fallDamage false
 setblock 8 ~ 8 end_gateway{ExitPortal:{Y:999999},ExactTeleport:1}
-execute store result block 8 ~ 8 ExitPortal.X int 1 run scoreboard players get $$X sh
-execute store result block 8 ~ 8 ExitPortal.Z int 1 run scoreboard players get $$Z sh
+execute store result block 8 ~ 8 ExitPortal.X int 1 as @e[tag=PX] run scoreboard players get @s sh
+execute store result block 8 ~ 8 ExitPortal.Z int 1 as @e[tag=PZ] run scoreboard players get @s sh
 data modify storage pk I[0] set from storage pg ~.Z[1]
 
 ---
 
 # teleport marker, wait for chunks to load if necessary
-execute store result storage sh p[0] double 1 run scoreboard players get $$X sh
-execute store result storage sh p[2] double 1 run scoreboard players get $$Z sh
-data modify entity @e[tag=M,limit=1] Pos set from storage sh p
 tag @e[tag=M] add Q
+execute at @p align xz run tp @e[tag=M] ~ 61. ~
 execute if score ?A pk matches 0 run data modify storage pk I[0] set from storage pg ~.Z[3]
 
 ---
@@ -498,14 +493,15 @@ execute unless entity @e[tag=M] run scoreboard players add $$c sh 1
 
 execute unless score $$c sh matches 1.. run data modify storage pk I[0] set from storage pk J
 
-execute unless entity @e[tag=B] run say Stronghold starter not found
+execute unless entity @e[tag=B] run say Stronghold start not found!
 execute at @e[tag=B] run fill ~-1 ~-1 ~-1 ~1 ~-1 ~1 stone_bricks
-execute at @e[tag=B] run say Done! Teleporting to stronghold starter.
+execute at @e[tag=B] run say Teleporting to stronghold!
 execute at @e[tag=B] run tp @p ~.5 ~ ~.5 ~ ~
 gamerule fallDamage true
 
 # cleanup
 kill @e[tag=M]
+kill @e[tag=A]
 scoreboard objectives remove sh
 """).substitute())
 
