@@ -843,6 +843,9 @@ execute unless entity @e[tag=Q] run data modify storage pk I[0] set from storage
 
 
 BURIED_TREASURE_PROGRAM = compile_spu_program(string.Template("""
+execute if score ?A pk matches 0 run say Can't teleport to buried treasure in this version!
+execute if score ?A pk matches 0 run data remove storage pk I[0][]
+
 title @p title "Please wait..."
 scoreboard players reset $$_ pk
 
