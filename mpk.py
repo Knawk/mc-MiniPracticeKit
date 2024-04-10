@@ -854,9 +854,10 @@ title @p actionbar ["Attempt ",{"score":{"objective":"pk","name":"$$_"}}]
 # clean up markers from last attempt
 kill @e[tag=M]
 
-# summon marker for search, randomize angle
+# summon marker for search, iterate angle
 execute at @e[tag=V] run summon armor_stand 0 ~ 0 {Marker:1,Tags:[M]}
-execute as @e[tag=M] store result entity @s Rotation[0] float 1 run data get entity @s UUID[0] .001
+scoreboard players add $$a pk 22249
+execute store result entity @e[tag=M,limit=1] Rotation[0] float .01 run scoreboard players get $$a pk
 
 # store BT coords
 data remove storage pk BT
@@ -868,7 +869,8 @@ kill @e[distance=..16,type=item]
 # try again if no BT was found
 execute unless data storage pk BT run data modify storage pk I[0] set from storage pk J
 
-# teleport player
+# reset momentum and teleport player
+execute at @e[tag=V] run tp @p ~ ~2 ~
 setblock 8 ~ 8 end_gateway{ExitPortal:{Y:2},ExactTeleport:1}
 execute store result block 8 ~ 8 ExitPortal.X int 1 run data get storage pk BT.x
 execute store result block 8 ~ 8 ExitPortal.Z int 1 run data get storage pk BT.z
