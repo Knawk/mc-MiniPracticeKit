@@ -811,10 +811,9 @@ execute unless entity @e[tag=Q] run data modify storage pk I[0] set from storage
 --- Z[4]
 
 # Add echos after each command in storage pk.I[1]
+
 # no "-" here since we put the echo command here instead
 tellraw @p {"nbt":"O","storage":"pk","interpret":true}
-
-# tellraw @p {"nbt":"I[1]","storage":"pk"}
 
 # clear storage pg.E and set loop start
 data remove storage pg E
@@ -825,15 +824,11 @@ data modify storage pg E append from storage pk I[1][0]
 data remove storage pk I[1][0]
 data modify storage pg E append from storage pg ~.Z[4][0]
 
-# tellraw @p {"nbt":"I[1]","storage":"pk"}
-
 # loop if there remain instructions in pk.I[1]
 execute if data storage pk I[1][] run data modify storage pk I[0] set from storage pk J
 
 # otherwise copy modified sequence back
 data modify storage pk I[1] set from storage pg E
-
-# tellraw @p {"nbt":"I[1]","storage":"pk"}
 """).substitute())
 
 
