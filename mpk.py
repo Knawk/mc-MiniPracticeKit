@@ -73,6 +73,22 @@ data remove storage pk B
 # track thrown triggers
 execute at @p as @e[type=item,distance=..32] run tag @s add T
 
+# if name tag trigger is present, just do renaming and exit early
+execute unless entity @e[tag=T,nbt={Item:{id:"minecraft:name_tag"}}] \\
+    run data remove storage pk I[0][]
+execute as @e[nbt={Item:{id:"minecraft:barrel"}}] \\
+    store result score @s pk \\
+    run data modify entity @s Item.tag.display.Name \\
+    set from entity @s Item.tag.BlockEntityTag.Items[{id:"minecraft:name_tag"}].tag.display.Name
+scoreboard players set $$r pk 0
+execute as @e[tag=T,scores={pk=1}] run scoreboard players add $$r pk 1
+tellraw @p ["[",{"text":"MPK","color":"aqua"},"] Applied ",{"score":{"objective":"pk","name":"$$r"}}," preset names."]
+data remove storage pk J
+data modify storage pk J append from storage pg ~.Z[5]
+data modify storage pk I set from storage pk J
+
+---
+
 # save triggers from barrels
 execute as @e[tag=T,nbt={Item:{id:"minecraft:barrel"}}] \\
     run data modify storage pk C append from entity @s Item.tag.BlockEntityTag.Items
@@ -292,12 +308,7 @@ data modify storage pk I[0] set from storage pg ~.Z[0]
 
 # cleanup
 
-kill @e[tag=V]
-forceload remove all
-forceload add 0 0
-# reset scores, but leave the scoreboard available for scripts
-scoreboard players reset * pk
-gamerule announceAdvancements true
+data modify storage pk I[0] set from storage pg ~.Z[5]
 
 ---
 
@@ -829,6 +840,18 @@ execute if data storage pk I[1][] run data modify storage pk I[0] set from stora
 
 # otherwise copy modified sequence back
 data modify storage pk I[1] set from storage pg E
+
+--- Z[5]
+
+# Main program cleanup routine
+-
+
+kill @e[tag=V]
+forceload remove all
+forceload add 0 0
+# reset scores, but leave the scoreboard available for scripts
+scoreboard players reset * pk
+gamerule announceAdvancements true
 """).substitute())
 
 
