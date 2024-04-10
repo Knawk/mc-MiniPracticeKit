@@ -205,10 +205,19 @@ execute if data storage pk {T:["minecraft:heart_of_the_sea"]} run data modify st
 
 ---
 
-# locate bastions/fortresses
+# locate bastions
 
-execute if data storage pk {T:["minecraft:blaze_rod"]} run data modify storage pk I insert 1 from storage pg ~.L0.N[1]
-execute if data storage pk {T:["minecraft:gilded_blackstone"]} run data modify storage pk I insert 1 from storage pg ~.L0.N[0]
+execute unless data storage pk {T:["minecraft:blaze_rod"]} run data remove storage pk I[0][]
+data modify storage pk I insert 1 from storage pg ~.L0.N[1]
+data modify storage pk I[0] set from storage pg ~.Z[4]
+
+---
+
+# locate fortresses
+
+execute unless data storage pk {T:["minecraft:gilded_blackstone"]} run data remove storage pk I[0][]
+data modify storage pk I insert 1 from storage pg ~.L0.N[0]
+data modify storage pk I[0] set from storage pg ~.Z[4]
 
 ---
 
@@ -335,26 +344,17 @@ execute if score ?O pk matches 0 as @e[tag=M] at @s positioned ~-4 ~ ~-4 store r
 )
 
 
-# TODO optimize?
 LOCATE_NETHER_SUBROUTINES = tuple(
     compile_spu_program(string.Template("""
 execute in the_nether positioned 1 ~ 1 run $bastion
-tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 execute in the_nether positioned 1 ~ -1 run $bastion
-tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 execute in the_nether positioned -1 ~ 1 run $bastion
-tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 execute in the_nether positioned -1 ~ -1 run $bastion
-tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 ---
 execute in the_nether positioned 1 ~ 1 run $fortress
-tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 execute in the_nether positioned 1 ~ -1 run $fortress
-tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 execute in the_nether positioned -1 ~ 1 run $fortress
-tellraw @p {"nbt":"O","storage":"pk","interpret":true}
 execute in the_nether positioned -1 ~ -1 run $fortress
-tellraw @p {"nbt":"O","storage":"pk","interpret":true}
     """).substitute(
         bastion=fmt('bastion_remnant'),
         fortress=fmt('fortress'),
@@ -807,6 +807,33 @@ execute if data storage pk R[] run data modify storage pk I[0] set from storage 
 
 data merge storage pk {H:1}
 execute unless entity @e[tag=Q] run data modify storage pk I[0] set from storage pg ~.Z[3]
+
+--- Z[4]
+
+# Add echos after each command in storage pk.I[1]
+# no "-" here since we put the echo command here instead
+tellraw @p {"nbt":"O","storage":"pk","interpret":true}
+
+# tellraw @p {"nbt":"I[1]","storage":"pk"}
+
+# clear storage pg.E and set loop start
+data remove storage pg E
+data modify storage pk J set from storage pk I[0]
+
+# pop pk.I[1][0], append to E
+data modify storage pg E append from storage pk I[1][0]
+data remove storage pk I[1][0]
+data modify storage pg E append from storage pg ~.Z[4][0]
+
+# tellraw @p {"nbt":"I[1]","storage":"pk"}
+
+# loop if there remain instructions in pk.I[1]
+execute if data storage pk I[1][] run data modify storage pk I[0] set from storage pk J
+
+# otherwise copy modified sequence back
+data modify storage pk I[1] set from storage pg E
+
+# tellraw @p {"nbt":"I[1]","storage":"pk"}
 """).substitute())
 
 
