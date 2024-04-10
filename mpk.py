@@ -1211,7 +1211,27 @@ def give_barters_book():
         "scoreboard players remove @p pk 1",
         "execute as @p[scores={pk=1..}] run data modify storage pk I[0] set from storage pk J",
     ]
-    give_command_book(commands, "AUTO", "Give piglin barters", str(0xead900))
+    give_command_book(commands, "AUTO", "Give piglin barters")
+
+
+def give_locate_book():
+    commands = [
+        "# configure the structure name on page 2 (1.16-1.18), page 4 (1.15), or page 6 (1.19+)",
+        "execute at @p store success score !1 pk run locate shipwreck",
+        'execute if score !1 pk matches 1 run tellraw @p {"nbt":"O","storage":"pk","interpret":true}',
+        "execute at @p store success score !2 pk run locate Shipwreck",
+        'execute if score !2 pk matches 1 run tellraw @p {"nbt":"O","storage":"pk","interpret":true}',
+        "execute at @p store success score !3 pk run locate structure shipwreck",
+        'execute if score !3 pk matches 1 run tellraw @p {"nbt":"O","storage":"pk","interpret":true}',
+        (
+            "execute"
+            " unless score !1 pk matches 1"
+            " unless score !2 pk matches 1"
+            " unless score !3 pk matches 1"
+            " run say Structure not found!"
+        ),
+    ]
+    give_command_book(commands, "AUTO", "Locate a structure and display its coordinates")
 
 
 BOOKS = {
@@ -1222,6 +1242,7 @@ BOOKS = {
     "offhand": give_offhand_book,
     "random_sword": give_random_sword_book,
     "barters": give_barters_book,
+    "locate": give_locate_book,
 }
 
 
