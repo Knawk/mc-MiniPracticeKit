@@ -915,7 +915,7 @@ execute as @e[tag=M] at @s \\
 execute unless entity @e[tag=M] run data modify storage pk I[0] set from storage pk J
 
 effect give @p resistance 3 9
-tp @p @e[tag=M,sort=random,limit=1]
+execute at @e[tag=M,sort=random,limit=1] run tp @p ~ ~ ~ 0 0
 
 ---
 
