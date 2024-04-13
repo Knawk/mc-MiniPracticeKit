@@ -861,7 +861,7 @@ scoreboard players reset $$_ pk
 # start of loop
 data modify storage pk J set from storage pk I[0]
 scoreboard players add $$_ pk 1
-title @p actionbar ["Attempt ",{"score":{"objective":"pk","name":"$$_"}}]
+title @p actionbar ["Searching ",{"score":{"objective":"pk","name":"$$_"}}]
 
 # clean up markers from last attempt
 kill @e[tag=M]
@@ -871,15 +871,26 @@ execute at @e[tag=V] run summon armor_stand 0 ~ 0 {Marker:1,Tags:[M]}
 scoreboard players add $$a pk 22249
 execute store result entity @e[tag=M,limit=1] Rotation[0] float .01 run scoreboard players get $$a pk
 
+# check biomes: close ocean/forest/beaches, no close desert or tundra
+execute as @e[tag=M] at @s positioned ^ ^ ^999900 store result score @s pk run locatebiome deep_ocean
+execute as @e[tag=M,scores={pk=..100}] at @s positioned ^ ^ ^999900 store result score @s pk run locatebiome forest
+execute as @e[tag=M,scores={pk=..100}] at @s positioned ^ ^ ^999999 store result score @s pk run locatebiome beach
+execute as @e[tag=M,scores={pk=..100}] at @s positioned ^-100 ^ ^999800 store result score @s pk run locatebiome beach
+execute as @e[tag=M,scores={pk=..100}] at @s positioned ^100 ^ ^999800 store result score @s pk run locatebiome beach
+kill @e[tag=M,scores={pk=100..}]
+execute as @e[tag=M] at @s positioned ^ ^ ^999900 store result score @s pk run locatebiome desert
+execute as @e[tag=M,scores={pk=800..}] at @s positioned ^ ^ ^999900 store result score @s pk run locatebiome snowy_tundra
+execute unless entity @e[tag=M,scores={pk=800..}] run data modify storage pk I[0] set from storage pk J
+
 # store BT coords
 data remove storage pk BT
+setblock 8 ~ 8 air
 setblock 8 ~ 8 chest
-execute at @e[tag=M] positioned ^ ^ ^999999 run loot replace block 8 ~ 8 container.0 loot chests/shipwreck_map
-setblock 8 ~ 8 air destroy
-execute as @e[distance=..16,type=item] run data modify storage pk BT set from entity @s Item.tag.Decorations[0]
-kill @e[distance=..16,type=item]
+execute at @e[tag=M] positioned ^ ^ ^999900 run loot replace block 8 ~ 8 container.0 loot chests/shipwreck_map
+data modify storage pk BT set from block 8 ~ 8 Items[].tag.Decorations[]
 # try again if no BT was found
 execute unless data storage pk BT run data modify storage pk I[0] set from storage pk J
+scoreboard players add $$_ pk 400
 
 # reset momentum and teleport player
 execute at @e[tag=V] run tp @p ~ ~2 ~
@@ -888,6 +899,7 @@ execute store result block 8 ~ 8 ExitPortal.X int 1 run data get storage pk BT.x
 execute store result block 8 ~ 8 ExitPortal.Z int 1 run data get storage pk BT.z
 tag @p remove Z1
 execute unless entity @p[tag=Z1] run data modify storage pk I prepend from storage pg ~.Z[1]
+execute at @p run setblock ~ ~1 ~ water
 
 # spawn 31 more markers and spread near player
 summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
@@ -895,14 +907,16 @@ execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
 execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
 execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
 execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
-execute at @p store success score @p pk run spreadplayers ~ ~ 3 52 false @e[tag=M]
+execute at @p store success score @p pk run spreadplayers ~ ~ 4 56 false @e[tag=M]
 data merge storage pk {H:1}
+
 # try again if there's not enough land
 execute if score @p pk matches 0 run data modify storage pk I[0] set from storage pk J
 
-# try again if there aren't enough trees. note that score @p pk must be 1 at this point
-execute as @e[tag=M] at @s if block ~ ~-1 ~ #leaves run scoreboard players add @p pk 1
-execute if score @p pk matches ..2 run data modify storage pk I[0] set from storage pk J
+# try again if there aren't enough trees, or searched enough BTs
+execute as @e[tag=M] at @s store success score @s pk if block ~ ~-1 ~ #leaves
+execute as @e[tag=M,scores={pk=0}] at @s store success score @s pk run fill ~-8 ~-4 ~-8 ~8 ~4 ~8 oak_leaves[persistent=true] replace oak_leaves
+execute if score $$_ pk matches ..999 unless entity @e[tag=M,scores={pk=1}] run data modify storage pk I[0] set from storage pk J
 
 # try again if there are no reasonable spawn points
 # only consider locations within 50ed-loading distance of bt (approx)
@@ -914,7 +928,6 @@ execute as @e[tag=M] at @s \\
     run kill @s
 execute unless entity @e[tag=M] run data modify storage pk I[0] set from storage pk J
 
-effect give @p resistance 3 9
 execute at @e[tag=M,sort=random,limit=1] run tp @p ~ ~ ~ 0 0
 
 ---
