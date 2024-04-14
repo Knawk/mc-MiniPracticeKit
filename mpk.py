@@ -44,8 +44,11 @@ MAIN_PROGRAM = compile_spu_program(string.Template("""
 # setup
 
 tellraw @p [{"text":"MiniPracticeKit v0.7-dev activated!","color":"aqua","bold":true}]
-scoreboard objectives add pk dummy
 gamerule announceAdvancements false
+scoreboard objectives add pk dummy
+
+# add setup flag
+scoreboard players set $$S pk 1
 
 # save auxiliary programs
 data modify storage pg ~ set from entity @e[tag=C,limit=1] HandItems[0].tag
@@ -312,21 +315,13 @@ data modify storage pk I[0] set from storage pg ~.Z[5]
 
 ---
 
-# potion script loop
+# load tick loop sequences
 
 data modify storage pk I prepend from storage pk I[0]
 data merge storage pk {H:1}
 
-# only run potion program if there are potions to process
-execute at @p run tag @e[type=potion,distance=..8] add P
-# this data moved from Potion to Item sometime between 1.15.2 and 1.16.1
-execute as @e[tag=P] \\
-    unless data entity @s Item.tag.pages \\
-    unless data entity @s Potion.tag.pages \\
-    run tag @s remove P
-execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Item.tag.pages
-execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Potion.tag.pages
-kill @e[tag=P]
+data modify storage pg _ set from storage pg ~.T
+data modify storage pk I[0] set from storage pg ~.Z[0]
 """).substitute(
     chest_name='\'"."\'',
     expanded_chest_name='\'{"text":"."}\'',
@@ -938,6 +933,23 @@ kill @e[tag=M]
 """).substitute())
 
 
+# sequences to run every tick.
+# just the potion program by default, but user scripts can modify this.
+TICK_PROGRAM = compile_spu_program(string.Template("""
+# potion program
+
+execute at @p run tag @e[type=potion,distance=..8] add P
+# this data moved from Potion to Item sometime between 1.15.2 and 1.16.1
+execute as @e[tag=P] \\
+    unless data entity @s Item.tag.pages \\
+    unless data entity @s Potion.tag.pages \\
+    run tag @s remove P
+execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Item.tag.pages
+execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Potion.tag.pages
+kill @e[tag=P]
+""").substitute())
+
+
 def give_mpk():
     # phase 3: build SPU
     phase3 = '[{}]'.format(','.join(f"'{escape(i, 's')}'" for i in [
@@ -998,6 +1010,7 @@ def give_mpk():
         'W': WAITING_MODE_PROGRAM,
         'B': BURIED_TREASURE_PROGRAM,
         'Z': UTIL_PROGRAMS,
+        'T': TICK_PROGRAM,
     }.items())
     program_carrier = '{id:armor_stand,Marker:1b,Invisible:1b,HandItems:[{Count:1b,id:egg,tag:{%s}}],Tags:["C"]}' % (programs,)
     phase1 = '{Time:1,BlockState:{Name:chain_command_block,Properties:{facing:up}},TileEntityData:{Command:"%s"},Passengers:[%s]}' % (
@@ -1261,6 +1274,80 @@ def give_locate_book():
     give_command_book(commands, "AUTO", "Locate a structure and display its coordinates")
 
 
+def give_damage_tracker_book():
+    commands = [
+        "# configure display settings on page 2",
+        "data merge storage damage_tracker {playerHearts:1}",
+
+        # prev/current health
+        "scoreboard objectives add hp0 dummy",
+        "scoreboard objectives add hp1 dummy",
+        # damage digits 10^0, 10^-1, 10^-2
+        "scoreboard objectives add dmg0 dummy",
+        "scoreboard objectives add dmg1 dummy",
+        "scoreboard objectives add dmg2 dummy",
+        "scoreboard players set $0 hp0 10",
+        "scoreboard players set $2 hp0 2",
+        "tag @a add DMG",
+        "execute if data storage damage_tracker {playerHearts:1} run tag @a add DMGH",
+
+        # if this is setup, install the rest in the tick loop and quit
+        "execute if score $S pk matches 1 run data modify storage pg ~.T append from storage pk I[0]",
+        "execute if score $S pk matches 1 run data remove storage pk I[0][]",
+
+        # tag other relevant entities
+        "tag @e[type=ender_dragon] add DMG",
+
+        "scoreboard players reset * dmg0",
+        "execute as @e[tag=DMG] store result score @s hp1 run data get entity @s Health 100",
+        "execute as @e[tag=DMG] run scoreboard players operation @s dmg2 = @s hp0",
+        "execute as @e[tag=DMG] run scoreboard players operation @s dmg2 -= @s hp1",
+        # divide by 2 for player hearts
+        'execute as @e[tag=DMGH] run scoreboard players operation @s dmg2 /= $2 hp0',
+
+        # separate digits
+        'execute as @e[tag=DMG] run scoreboard players operation @s dmg1 = @s dmg2',
+        'execute as @e[tag=DMG] run scoreboard players operation @s dmg1 /= $0 hp0',
+        'execute as @e[tag=DMG] run scoreboard players operation @s dmg0 = @s dmg1',
+        'execute as @e[tag=DMG] run scoreboard players operation @s dmg0 /= $0 hp0',
+
+        'execute as @e[tag=DMG] run scoreboard players operation @s dmg2 %= $0 hp0',
+        'execute as @e[tag=DMG] run scoreboard players operation @s dmg1 %= $0 hp0',
+
+        # report
+        (
+            'execute as @e[tag=DMG,tag=!DMGH]'
+            ' if score @s hp1 < @s hp0'
+            ' run tellraw @p ['
+            '"["'
+            ',{"selector":"@s"},"] -"'
+            ',{"score":{"objective":"dmg0","name":"@s"}}'
+            ',"."'
+            ',{"score":{"objective":"dmg1","name":"@s"}}'
+            ',{"score":{"objective":"dmg2","name":"@s[scores={dmg2=1..]"}}'
+            ',{"text":" hp","color":"red"}'
+            ']'
+        ),
+        (
+            'execute as @e[tag=DMGH]'
+            ' if score @s hp1 < @s hp0'
+            ' run tellraw @p ['
+            '"["'
+            ',{"selector":"@s"},"] -"'
+            ',{"score":{"objective":"dmg0","name":"@s"}}'
+            ',"."'
+            ',{"score":{"objective":"dmg1","name":"@s"}}'
+            ',{"score":{"objective":"dmg2","name":"@s[scores={dmg2=1..]"}}'
+            ',{"text":"♥","color":"red"}'
+            ']'
+        ),
+
+        # save hp for next tick
+        "execute as @e[tag=DMG] run scoreboard players operation @s hp0 = @s hp1",
+    ]
+    give_command_book(commands, "AUTO", "Enable damage tracker")
+
+
 BOOKS = {
     "post_bastion": give_post_bastion_gear_book,
     "force_perch": give_force_perch_book,
@@ -1270,10 +1357,14 @@ BOOKS = {
     "random_sword": give_random_sword_book,
     "barters": give_barters_book,
     "locate": give_locate_book,
+    "dmg": give_damage_tracker_book,
 }
 
 
 def main():
+    # pick encoding where clip.exe won't corrupt Unicode
+    sys.stdout.reconfigure(encoding="utf-16-le")  # type: ignore
+
     if len(sys.argv) == 1:
         give_mpk()
         return
