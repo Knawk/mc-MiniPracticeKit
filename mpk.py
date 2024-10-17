@@ -47,9 +47,6 @@ tellraw @p [{"text":"MiniPracticeKit v0.7-dev activated!","color":"aqua","bold":
 gamerule announceAdvancements false
 scoreboard objectives add pk dummy
 
-# add setup flag
-scoreboard players set $$S pk 1
-
 # save auxiliary programs
 data modify storage pg ~ set from entity @e[tag=C,limit=1] HandItems[0].tag
 
@@ -1291,9 +1288,9 @@ def give_damage_tracker_book():
         "tag @a add DMG",
         "execute if data storage damage_tracker {playerHearts:1} run tag @a add DMGH",
 
-        # if this is setup, install the rest in the tick loop and quit
-        "execute if score $S pk matches 1 run data modify storage pg ~.T append from storage pk I[0]",
-        "execute if score $S pk matches 1 run data remove storage pk I[0][]",
+        # install the rest in the tick loop and quit
+        "data modify storage pg ~.T append from storage pk I[0]",
+        "data remove storage pk I[0][]",
 
         # tag other relevant entities
         "tag @e[type=ender_dragon] add DMG",
@@ -1355,9 +1352,9 @@ def give_create_save_state_book():
 
         "say Run '/trigger savestate' to create save state data.",
 
-        # if this is setup, install the rest in the tick loop and quit
-        "execute if score $S pk matches 1 run data modify storage pg ~.T append from storage pk I[0]",
-        "execute if score $S pk matches 1 run data remove storage pk I[0][]",
+        # install the rest in the tick loop and quit
+        "data modify storage pg ~.T append from storage pk I[0]",
+        "data remove storage pk I[0][]",
 
         # exit unless savestate was triggered
         "execute unless score @p savestate matches 1 run data remove storage pk I[0][]",
