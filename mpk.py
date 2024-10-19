@@ -1362,6 +1362,7 @@ def give_create_save_state_book():
         # exit unless savestate was triggered
         "execute unless score @p savestate matches 1 run data remove storage pk I[0][]",
         # reset trigger for next time
+        "scoreboard players reset @p savestate",
         "scoreboard players enable @p savestate",
 
         # summon armor stand and populate data
