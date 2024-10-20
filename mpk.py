@@ -771,24 +771,24 @@ execute if data storage pg _[0] run data modify storage pk I insert 1 from stora
 
 --- Z[1]
 
-# Teleports the player through the portal block at (8, 0/-64, 8).
+# Teleports the player through the portal block at (8, 0/-64, 8) in the player's dimension,
+# and deletes the portal block.
 -
-execute at @p run forceload add ~ ~
-execute at @p run summon armor_stand ~ ~1 ~ {Marker:1,Invisible:1,Tags:[Z]}
+execute at @p run summon area_effect_cloud ~ ~1 ~ {Duration:8,Tags:[Z]}
+execute at @p store result score @e[tag=Z] pk run forceload add ~ ~
 
 execute at @p align xyz run tp @p ~.5 ~ ~.5
-execute at @p if block 0 0 1 bedrock run clone 8 0 8 8 0 8 ~ ~ ~
-execute if block 0 0 1 bedrock run setblock 8 0 8 air
-execute at @p run clone 8 -64 8 8 -64 8 ~ ~ ~
-setblock 8 -64 8 air
+execute at @p if block 0 0 1 bedrock run clone 8 0 8 8 0 8 ~ ~ ~ masked move
+execute at @p run clone 8 -64 8 8 -64 8 ~ ~ ~ masked move
 
 data merge storage pk {H:1}
 data merge storage pk {H:1}
 data merge storage pk {H:1}
+tag @p add Z1
 
 execute at @e[tag=Z] run setblock ~ ~-1 ~ air
-kill @e[tag=Z]
-tag @p add Z1
+# forceload remove only if the original forceload add wasn't a no-op
+execute at @e[tag=Z,scores={pk=1}] run forceload remove ~ ~
 
 --- Z[2]
 
