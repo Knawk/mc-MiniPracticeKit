@@ -1021,6 +1021,9 @@ data modify storage pk S.items append value {id:writable_book,Slot:4,Count:1,tag
     display:{Name:'{"text":"AUTO"}'}\\
 }}
 
+# TODO do proper tp
+say tp isn't implemented yet, please F3+C and paste it into the barrel's AUTO book (remember to replace @s with @p)
+
 # copy items to barrel storage
 data modify storage pk I prepend from storage pg ~.V[1]
 
