@@ -40,12 +40,14 @@ def compile_spu_program(prog):
 #       - pk.B.P stores tags of writable books for potion scripts
 #       - pk.B.A stores contents of writable books for auto scripts
 #   - objective pk is used for misc scoreboard operations
-MAIN_PROGRAM = compile_spu_program(string.Template("""
+MAIN_PROGRAM = compile_spu_program(string.Template(
+"""
 # setup
 
 tellraw @p [{"text":"MiniPracticeKit v0.7-dev activated!","color":"aqua","bold":true}]
 gamerule announceAdvancements false
 scoreboard objectives add pk dummy
+scoreboard objectives add save dummy
 
 # add setup flag
 scoreboard players set $$S pk 1
@@ -933,10 +935,128 @@ kill @e[tag=M]
 """).substitute())
 
 
+# called when the player triggers savestate
+#
+# trick: just put 27 filler items in a chest, then add inventory items after.
+# the chest fromNbt will "overwrite" an earlier item in chest.Items with a later item
+# if they share the same Slot.
+#
+# - current issue: how do we get 27 filler items?
+#   - summon 3 markers. execute "insert" with 3 nested "as marker" for 3^3 = 27 executions.
+#   - then merge filler data.
+#
+# /execute as @e[tag=A] as @e[tag=A] as @e[tag=A] run loot insert (chest) mine (shulker box)
+# /data modify block (chest) Items[{}] merge value {id:bow,tag:{fil:1}}
+#
+# why a shulker box?
+#   - it's one of the only blocks that drops when mined with no tool,
+#     yet is unstackable in its default (i.e. no extra NBT) state.
+#   - the main alternative is the bed, but you need to specify both color and [part=head],
+#     so the name ends up being longer
+#   - the downside compared to the bed is that the resulting bow retains the BlockEntityData tag,
+#     which doesn't cost any more chars in MPK but does inflate the data size
+#
+# (idk how to use /loot to get individual tools,
+#  or to /loot kill vehicles since they don't have loot tables)
+#
+# so the process would be:
+#   - use trick to get hotbar items (and maybe others) in chest A
+#   - remove all items in chest A past the 9th
+#   - reduce the other items' Slot values by 9
+#   - use trick again to get other items in chest B
+#
+# armor/offhand items are at the end of the player Inventory array,
+# and don't get materialized in the chest anyway, so they're not a concern.
+SAVE_STATE_PROGRAM = compile_spu_program(string.Template(
+"""
+data modify storage pk S.p set from entity @p
+execute store result storage pk S.p.d int 1 run difficulty
+
+execute at @p run summon armor_stand ~ ~ ~ {Tags:[SS],Invulnerable:1,NoGravity:1,Glowing:1}
+
+# working copy of inventory
+data modify storage pk S.i set from entity @p Inventory
+
+# S.cont are the containers
+data merge storage pk {S:{cont:[{id:chest,Slot:0,Count:1}]}}
+
+# $$i is loop counter
+scoreboard players set $$i save 0
+
+# save loop body
+data modify storage pk J set from storage pk I[0]
+
+# $$s is the slot of the inv item we're transferring
+execute store result score $$s save run data get storage pk S.i[0].Slot
+
+# score @p save is 1 if inv as an item for current slot
+execute store result score @p save if score $$s save = $$i save
+
+# storage pk S.items is the contents of the chest we're currently building.
+
+# if the inv had an item for slot $$i:
+#   - if needed its slot number is 9-35 (inner inv), adjust it to 0-26 (chest)
+#   - add it to S.items and remove from S.i
+execute as @p[scores={save=1}] \\
+    if score $$s save matches 9.. run scoreboard players remove $$s save 9
+execute as @p[scores={save=1}] \\
+    store result storage pk S.i[0] byte 1 run scoreboard players get $$s save
+execute as @p[scores={save=1}] run data modify storage pk S.items append from storage pk S.i[0]
+execute as @p[scores={save=1}] run data remove storage pk S.i[0]
+
+# otherwise add a filler item
+execute as @p[scores={save=0}] run data modify storage pk S.items append value {id:bow,Count:1,tag:{F:1}}
+
+# if this is the last hotbar slot, transfer S.c into S.b first chest
+execute if score $$i save matches 8 run data modify storage pk S.b.tag.BlockEntityTag.Items[0].tag.BlockEntityTag.Items set from storage pk S.c
+
+# copy items to hotbar chest storage, prepare for filling inner inv items
+execute if score $$i save matches 8 run data modify storage pk I prepend from storage pg ~.V[1]
+
+# repeat loop if there are more slots to copy
+execute if score $$i save matches ..34 run data modify storage pk I[0] set from storage pk J
+
+# otherwise copy items to inner inv chest storage, prepare for filling barrel items
+data modify storage pk I prepend from storage pg ~.V[1]
+
+# add hotbar and inner inv chest storages to items
+data modify storage pk S.items append from storage pk S.cont[{id:chest}]
+
+# add gamemode/difficulty books
+
+# copy items to barrel storage
+data modify storage pk I prepend from storage pk ~.V[1]
+
+# place barrel on armor stand's head, remove save state tag
+data modify entity @e[tag=SS,limit=1] ArmorItems[3] set from storage pk S.cont[-1]
+tag @e[tag=SS] remove SS
+
+--- V[1]
+
+-
+# remove call instruction
+data remove storage pk I[1][0]
+
+# copy S.items into the last container's block entity Items
+data modify pk S.cont[-1].tag.BlockEntityTag.Items set from storage pk S.items
+
+# clear S.items to prepare for filling the next container
+data remove storage pk S.items
+
+# add a new container
+data modify storage pk S.cont append value {id:barrel,Count:1}
+# if we just filled the hotbar chest, the next container should be the inner inventory chest
+execute if score $$i save matches 8 \\
+    run data modify storage pk S.cont[-1] merge value {id:chest,Slot:1}
+"""
+).substitute())
+
+
 # sequences to run every tick.
-# just the potion program by default, but user scripts can modify this.
-TICK_PROGRAM = compile_spu_program(string.Template("""
-# potion program
+# by default, only checks potion scripts and save state trigger, but user scripts can add programs.
+TICK_PROGRAM = compile_spu_program(string.Template(
+"""
+# check for potion scripts
 
 execute at @p run tag @e[type=potion,distance=..8] add P
 # this data moved from Potion to Item sometime between 1.15.2 and 1.16.1
@@ -947,6 +1067,12 @@ execute as @e[tag=P] \\
 execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Item.tag.pages
 execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Potion.tag.pages
 kill @e[tag=P]
+
+# check and reset save state trigger
+
+execute as @p[scores={save=1}] run data modify storage pk I insert 1 from storage pg ~.V[0]
+scoreboard players reset @p save
+scoreboard players enable @p save
 """).substitute())
 
 
@@ -1008,8 +1134,9 @@ def give_mpk():
         'N1': NETHER_TERRAIN_PROGRAM_SEARCH,
         'N2': NETHER_TERRAIN_PROGRAM_FINISH,
         'W': WAITING_MODE_PROGRAM,
-        'B': BURIED_TREASURE_PROGRAM,
+        # 'B': BURIED_TREASURE_PROGRAM,
         'Z': UTIL_PROGRAMS,
+        'V': SAVE_STATE_PROGRAM,
         'T': TICK_PROGRAM,
     }.items())
     program_carrier = '{id:armor_stand,Marker:1b,Invisible:1b,HandItems:[{Count:1b,id:egg,tag:{%s}}],Tags:["C"]}' % (programs,)
@@ -1350,20 +1477,20 @@ def give_damage_tracker_book():
 
 def give_create_save_state_book():
     commands = [
-        "scoreboard objectives add savestate trigger",
-        "scoreboard players enable @a savestate",
+        "scoreboard objectives add save trigger",
+        "scoreboard players enable @a save",
 
-        "say Run '/trigger savestate' to create save state data.",
+        "say Run '/trigger save' to create save state data.",
 
         # if this is setup, install the rest in the tick loop and quit
         "execute if score $S pk matches 1 run data modify storage pg ~.T append from storage pk I[0]",
         "execute if score $S pk matches 1 run data remove storage pk I[0][]",
 
         # exit unless savestate was triggered
-        "execute unless score @p savestate matches 1 run data remove storage pk I[0][]",
+        "execute unless score @p save matches 1 run data remove storage pk I[0][]",
         # reset trigger for next time
-        "scoreboard players reset @p savestate",
-        "scoreboard players enable @p savestate",
+        "scoreboard players reset @p save",
+        "scoreboard players enable @p save",
 
         # summon armor stand and populate data
         (
