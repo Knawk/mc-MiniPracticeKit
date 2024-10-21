@@ -937,6 +937,9 @@ kill @e[tag=M]
 
 SAVE_STATE_PROGRAM = compile_spu_program(string.Template(
 """
+-
+data remove storage pk I[1][0]
+
 # S.cont are the containers
 data modify storage pk S set value {cont:[{id:chest,Slot:0,Count:1}]}
 
@@ -1031,10 +1034,6 @@ data modify storage pk I prepend from storage pg ~.V[1]
 data modify entity @e[tag=SS,limit=1] ArmorItems[3] set from storage pk S.cont[-2]
 tag @e[tag=SS] remove SS
 
-# reset trigger
-scoreboard players reset @p save
-scoreboard players enable @p save
-
 --- V[1]
 
 -
@@ -1082,9 +1081,11 @@ execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Item.t
 execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Potion.tag.pages
 kill @e[tag=P]
 
-# check save state trigger
+# check and reset/re-enable save state trigger
 
-execute as @p[scores={save=1}] run data modify storage pk I insert 1 from storage pg ~.V[0]
+execute as @p[scores={save=1}] run data modify storage pk I prepend from storage pg ~.V[0]
+scoreboard players reset @p save
+scoreboard players enable @p save
 """).substitute())
 
 
