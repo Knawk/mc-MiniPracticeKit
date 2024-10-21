@@ -935,38 +935,6 @@ kill @e[tag=M]
 """).substitute())
 
 
-# called when the player triggers savestate
-#
-# trick: just put 27 filler items in a chest, then add inventory items after.
-# the chest fromNbt will "overwrite" an earlier item in chest.Items with a later item
-# if they share the same Slot.
-#
-# - current issue: how do we get 27 filler items?
-#   - summon 3 markers. execute "insert" with 3 nested "as marker" for 3^3 = 27 executions.
-#   - then merge filler data.
-#
-# /execute as @e[tag=A] as @e[tag=A] as @e[tag=A] run loot insert (chest) mine (shulker box)
-# /data modify block (chest) Items[{}] merge value {id:bow,tag:{fil:1}}
-#
-# why a shulker box?
-#   - it's one of the only blocks that drops when mined with no tool,
-#     yet is unstackable in its default (i.e. no extra NBT) state.
-#   - the main alternative is the bed, but you need to specify both color and [part=head],
-#     so the name ends up being longer
-#   - the downside compared to the bed is that the resulting bow retains the BlockEntityData tag,
-#     which doesn't cost any more chars in MPK but does inflate the data size
-#
-# (idk how to use /loot to get individual tools,
-#  or to /loot kill vehicles since they don't have loot tables)
-#
-# so the process would be:
-#   - use trick to get hotbar items (and maybe others) in chest A
-#   - remove all items in chest A past the 9th
-#   - reduce the other items' Slot values by 9
-#   - use trick again to get other items in chest B
-#
-# armor/offhand items are at the end of the player Inventory array,
-# and don't get materialized in the chest anyway, so they're not a concern.
 SAVE_STATE_PROGRAM = compile_spu_program(string.Template(
 """
 # S.cont are the containers
