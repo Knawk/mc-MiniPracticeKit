@@ -39,6 +39,7 @@ def compile_spu_program(prog):
 #   - storage pk.B stores data for auto/potion scripts
 #       - pk.B.P stores tags of writable books for potion scripts
 #       - pk.B.A stores contents of writable books for auto scripts
+#   - storage pk.S stores data for save state logic
 #   - objective pk is used for misc scoreboard operations
 MAIN_PROGRAM = compile_spu_program(string.Template(
 """
@@ -764,7 +765,8 @@ kill @e[tag=M]
 # Single-sequence utility programs.
 # Each first instruction is intentionally invalid so that a given program can be loaded with just:
 # `data modify storage pk I[0] set from storage pg ~.Z[...]`
-UTIL_PROGRAMS = compile_spu_program(string.Template("""
+UTIL_PROGRAMS = compile_spu_program(string.Template(
+"""
 # Loads the program at pg._ into the instruction buffer.
 -
 data modify storage pk I insert 1 from storage pg _[-1]
@@ -943,11 +945,6 @@ data remove storage pk I[1][0]
 # S.cont are the containers
 data modify storage pk S set value {cont:[{id:chest,Slot:0,Count:1}]}
 
-# save raw data so other tools can use it.
-# S.p is the player data, S.p.d is the difficulty
-data modify storage pk S.p set from entity @p
-execute store result storage pk S.p.d int 1 run difficulty
-
 execute at @p run summon armor_stand ~ ~ ~ {Tags:[SS],Invulnerable:1,NoGravity:1,Glowing:1}
 
 # working copy of inventory
@@ -1026,6 +1023,14 @@ data modify storage pk S.items append value {id:writable_book,Slot:4,Count:1,tag
 
 # TODO do proper tp
 say tp isn't implemented yet, please F3+C and paste it into the barrel's AUTO book (remember to replace @s with @p)
+
+# store raw data so other tools can use it
+data modify storage pk S.items append value {id:cod,Slot:26,Count:1,tag:{\\
+    display:{Name:'{"text":"Raw data"}'}\\
+}}
+data modify storage pk S.items[-1].tag merge from entity @p
+# tag.d is the difficulty
+execute store result storage pk S.items[-1].tag.d int 1 run difficulty
 
 # copy items to barrel storage
 data modify storage pk I prepend from storage pg ~.V[1]
