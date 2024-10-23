@@ -36,9 +36,10 @@ def compile_spu_program(prog):
 #   - storage pk.H is the halt flag
 #   - storage pk.C stores lists of items from containers to be given to player
 #   - storage pk.R stores items from white boxes to be given in random order
-#   - storage pk.B stores data for auto/potion scripts
-#       - pk.B.P stores tags of writable books for potion scripts
-#       - pk.B.A stores contents of writable books for auto scripts
+#   - storage pk.B stores data for either renamed block entities or auto/potion scripts
+#       - if used for scripts:
+#           - pk.B.P stores tags of writable books for potion scripts
+#           - pk.B.A stores contents of writable books for auto scripts
 #   - storage pk.S stores data for save state logic
 #   - objective pk is used for misc scoreboard operations
 MAIN_PROGRAM = compile_spu_program(string.Template(
@@ -56,10 +57,47 @@ scoreboard players set $$S pk 1
 # save auxiliary programs
 data modify storage pg ~ set from entity @e[tag=C,limit=1] HandItems[0].tag
 
-# clean up from bootstrap process
+# clean up any data from prior activations
+data merge storage pk {T:[],C:[]}
+data remove storage pk B
+
+# clean up from bootstrap process (but leave the carrier in case its pos is needed for renaming)
 execute at @e[tag=V] run fill ~ ~1 ~ ~15 ~1 ~2 bedrock
 execute at @e[tag=C] run fill ~ ~-1 ~ ~ ~1 ~ air
+
+# if activated on a block entity, spawn a renamed copy
+execute at @e[tag=C] \\
+    store success score @p pk \\
+    if data block ~ ~-2 ~ CustomName \\
+    run summon item ~ ~-1 ~ {Tags:[B],Item:{id:egg,Count:1},NoGravity:1,Invulnerable:1,Glowing:1}
+
+execute at @e[tag=C] run data modify storage pk B set from block ~ ~-2 ~
+data modify entity @e[tag=B,limit=1] Item.id set from storage pk B.id
+data modify entity @e[tag=B,limit=1] Item.tag.BlockEntityTag set from storage pk B
+data modify entity @e[tag=B,limit=1] Item.tag.display.Name set from storage pk B.CustomName
 kill @e[tag=C]
+
+# if we didn't do a rename, track thrown triggers
+execute at @p[scores={pk=0}] run tag @e[type=item,distance=..16] add T
+
+# proceed to process triggers if we didn't do a rename, and there's at least one trigger
+execute unless entity @e[tag=B] if entity @e[tag=T] run data remove storage pk I[0][]
+
+# (if we get here, we either did a rename and the score is 1, or there are no triggers)
+tellraw @p[scores={pk=0}] [\\
+    "No triggers found! ",\\
+    {\\
+        "text":"Visit the website for info!",\\
+        "color":"aqua",\\
+        "underlined":"true",\\
+        "clickEvent":{"action":"open_url","value":"http://mpk.knawk.net"}\\
+    }\\
+]
+
+# cleanup and start tick loop
+data modify storage pk I[0] set from storage pg ~.Z[5]
+
+---
 
 # detect if async chunk loading is enabled. ?A is nothing pre-20w45a, else 0
 execute store success score ?A pk if block 0 -64 0 tuff
@@ -72,43 +110,6 @@ execute store success score ?L2 pk run locate Fortress
 execute if score ?L2 pk matches 0 run data modify storage pg ~.L0 set from storage pg ~.L2
 execute store success score ?L1 pk run locate fortress
 execute if score ?L1 pk matches 0 run data modify storage pg ~.L0 set from storage pg ~.L1
-
-data merge storage pk {T:[],C:[]}
-data remove storage pk B
-
-# track thrown triggers
-execute at @p as @e[type=item,distance=..32] run tag @s add T
-
-# if name tag trigger is present, just do renaming and exit early
-execute unless entity @e[tag=T,nbt={Item:{id:"minecraft:name_tag"}}] \\
-    run data remove storage pk I[0][]
-execute as @e[nbt={Item:{id:"minecraft:barrel"}}] \\
-    store result score @s pk \\
-    run data modify entity @s Item.tag.display.Name \\
-    set from entity @s Item.tag.BlockEntityTag.Items[{id:"minecraft:name_tag"}].tag.display.Name
-scoreboard players set $$r pk 0
-execute as @e[tag=T,scores={pk=1}] run scoreboard players add $$r pk 1
-tellraw @p ["[",{"text":"MPK","color":"aqua"},"] Applied ",{"score":{"objective":"pk","name":"$$r"}}," preset names."]
-
-data modify storage pk I[0] set from storage pg ~.Z[5]
-
----
-
-execute if entity @e[tag=T] run data remove storage pk I[0][]
-
-tellraw @p [\\
-    "No triggers found! ",\\
-    {\\
-        "text":"Visit the website for info!",\\
-        "color":"aqua",\\
-        "underlined":"true",\\
-        "clickEvent":{"action":"open_url","value":"http://mpk.knawk.net"}\\
-    }\\
-]
-# cleanup and start tick loop
-data modify storage pk I[0] set from storage pg ~.Z[5]
-
----
 
 # save triggers from barrels
 execute as @e[tag=T,nbt={Item:{id:"minecraft:barrel"}}] \\
@@ -159,7 +160,7 @@ tag @e[tag=TP,nbt={Item:{tag:{display:{Name:'{"text":"AUTO"}'}}}}] add TA
 execute as @e[tag=TP,tag=!TA] run data modify storage pk B.P append from entity @s Item
 execute as @e[tag=TA] run data modify storage pk B.A append from entity @s Item.tag.pages
 
-execute at @e[tag=T] run clear @p
+clear @p
 kill @e[tag=T]
 
 # create potions from writable books
