@@ -1495,35 +1495,6 @@ def give_damage_tracker_book():
     give_command_book(commands, "AUTO", "Enable damage tracker")
 
 
-def give_create_save_state_book():
-    commands = [
-        "scoreboard objectives add save trigger",
-        "scoreboard players enable @a save",
-
-        "say Run '/trigger save' to create save state data.",
-
-        # if this is setup, install the rest in the tick loop and quit
-        "execute if score $S pk matches 1 run data modify storage pg ~.T append from storage pk I[0]",
-        "execute if score $S pk matches 1 run data remove storage pk I[0][]",
-
-        # exit unless savestate was triggered
-        "execute unless score @p save matches 1 run data remove storage pk I[0][]",
-        # reset trigger for next time
-        "scoreboard players reset @p save",
-        "scoreboard players enable @p save",
-
-        # summon armor stand and populate data
-        (
-            "execute at @p run summon armor_stand ~ ~ ~ {"
-            "Tags:[SSA],ArmorItems:[{},{},{},{id:emerald_block,Count:1}],"
-            "Invulnerable:1,NoGravity:1,Glowing:1"
-            "}"
-        ),
-        "data modify entity @e[limit=1,tag=SSA] ArmorItems[3].tag.P set from entity @p",
-    ]
-    give_command_book(commands, "AUTO", "Enable save state creation")
-
-
 BOOKS = {
     "post_bastion": give_post_bastion_gear_book,
     "force_perch": give_force_perch_book,
@@ -1534,7 +1505,6 @@ BOOKS = {
     "barters": give_barters_book,
     "locate": give_locate_book,
     "dmg": give_damage_tracker_book,
-    "savestate": give_create_save_state_book,
 }
 
 
