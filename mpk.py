@@ -40,6 +40,7 @@ def compile_spu_program(prog):
 #       - if used for scripts:
 #           - pk.B.P stores tags of writable books for potion scripts
 #           - pk.B.A stores contents of writable books for auto scripts
+#   - storage pk.M stores data for metadata triggers
 #   - storage pk.S stores data for save state logic
 #   - objective pk is used for misc scoreboard operations
 MAIN_PROGRAM = compile_spu_program(string.Template(
@@ -58,7 +59,7 @@ scoreboard players set $$S pk 1
 data modify storage pg ~ set from entity @e[tag=C,limit=1] HandItems[0].tag
 
 # clean up any data from prior activations
-data merge storage pk {T:[],C:[]}
+data merge storage pk {T:[],C:[],M:[]}
 data remove storage pk B
 
 # clean up from bootstrap process (but leave the carrier in case its pos is needed for renaming)
@@ -137,6 +138,10 @@ execute as @e[tag=T] run data modify storage pk T append from entity @s Item.id
 execute as @e[tag=T,nbt={Item:{id:"minecraft:obsidian"}}] \\
     store result score BM pk \\
     run data get entity @s Item.Count
+
+# save metadata triggers
+execute as @e[tag=T,nbt={Item:{id:"minecraft:paper"}}] \\
+    run data modify storage pk M append from entity @s Item.tag
 
 # tag item containers
 tag @e[tag=T,nbt={Item:{id:"minecraft:chest"}}] add I
@@ -1023,7 +1028,7 @@ data modify storage pk S.items append value {id:writable_book,Slot:4,Count:1,tag
 say tp isn't implemented yet, please F3+C and paste it into the barrel's AUTO book (remember to replace @s with @p)
 
 # store raw data so other tools can use it
-data modify storage pk S.items append value {id:cod,Slot:26,Count:1,tag:{\\
+data modify storage pk S.items append value {id:paper,Slot:26,Count:1,tag:{\\
     display:{Name:'{"text":"Raw data"}'}\\
 }}
 data modify storage pk S.items[-1].tag merge from entity @p
