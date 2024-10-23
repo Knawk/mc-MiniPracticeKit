@@ -89,9 +89,24 @@ execute as @e[nbt={Item:{id:"minecraft:barrel"}}] \\
 scoreboard players set $$r pk 0
 execute as @e[tag=T,scores={pk=1}] run scoreboard players add $$r pk 1
 tellraw @p ["[",{"text":"MPK","color":"aqua"},"] Applied ",{"score":{"objective":"pk","name":"$$r"}}," preset names."]
-data remove storage pk J
-data modify storage pk J append from storage pg ~.Z[5]
-data modify storage pk I set from storage pk J
+
+data modify storage pk I[0] set from storage pg ~.Z[5]
+
+---
+
+execute if entity @e[tag=T] run data remove storage pk I[0][]
+
+tellraw @p [\\
+    "No triggers found! ",\\
+    {\\
+        "text":"Visit the website for info!",\\
+        "color":"aqua",\\
+        "underlined":"true",\\
+        "clickEvent":{"action":"open_url","value":"http://mpk.knawk.net"}\\
+    }\\
+]
+# cleanup and start tick loop
+data modify storage pk I[0] set from storage pg ~.Z[5]
 
 ---
 
@@ -143,16 +158,6 @@ tag @e[tag=T,nbt={Item:{id:"minecraft:writable_book"}}] add TP
 tag @e[tag=TP,nbt={Item:{tag:{display:{Name:'{"text":"AUTO"}'}}}}] add TA
 execute as @e[tag=TP,tag=!TA] run data modify storage pk B.P append from entity @s Item
 execute as @e[tag=TA] run data modify storage pk B.A append from entity @s Item.tag.pages
-
-execute unless entity @e[tag=T] run tellraw @p [\\
-    "No triggers found! ",\\
-    {\\
-        "text":"Visit the website for info!",\\
-        "color":"aqua",\\
-        "underlined":"true",\\
-        "clickEvent":{"action":"open_url","value":"http://mpk.knawk.net"}\\
-    }\\
-]
 
 execute at @e[tag=T] run clear @p
 kill @e[tag=T]
@@ -312,19 +317,8 @@ data modify storage pk I[0] set from storage pg ~.Z[0]
 
 ---
 
-# cleanup
-
+# cleanup and start tick loop
 data modify storage pk I[0] set from storage pg ~.Z[5]
-
----
-
-# load tick loop sequences
-
-data modify storage pk I prepend from storage pk I[0]
-data merge storage pk {H:1}
-
-data modify storage pg _ set from storage pg ~.T
-data modify storage pk I[0] set from storage pg ~.Z[0]
 """).substitute(
     chest_name='\'"."\'',
     expanded_chest_name='\'{"text":"."}\'',
@@ -838,7 +832,7 @@ data modify storage pk I[1] set from storage pg E
 
 --- Z[5]
 
-# Main program cleanup routine
+# Cleans up main program and runs tick loop (making later sequences unreachable)
 -
 
 kill @e[tag=V]
@@ -847,6 +841,9 @@ forceload add 0 0
 # reset scores, but leave the scoreboard available for scripts
 scoreboard players reset * pk
 gamerule announceAdvancements true
+
+# tick loop
+data modify storage pk I prepend from storage pg ~.T[]
 """).substitute())
 
 
@@ -1071,9 +1068,13 @@ execute if score $$i save matches 8 \\
 
 
 # sequences to run every tick.
-# by default, only checks potion scripts and save state trigger, but user scripts can add programs.
+# by default, only checks potion scripts and save state trigger,
+# but user scripts can add custom sequences (which should be single-tick).
 TICK_PROGRAM = compile_spu_program(string.Template(
 """
+-
+data merge storage pk {H:1}
+
 # check for potion scripts
 
 execute at @p run tag @e[type=potion,distance=..8] add P
