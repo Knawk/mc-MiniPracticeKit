@@ -269,7 +269,7 @@ execute unless data storage pk {T:["minecraft:netherrack"]} \\
     unless data storage pk {T:["minecraft:gilded_blackstone"]} \\
     run setblock 8 ~ 8 air
 execute if data storage pk {T:["minecraft:end_stone"]} run setblock 8 ~ 8 end_portal
-execute unless block 8 ~ 8 air run data modify storage pk I[0] set from storage pg ~.Z[1]
+execute unless block 8 ~ 8 air run data modify storage pk I insert 1 from storage pg ~.Z[1]
 
 ---
 
@@ -437,7 +437,7 @@ gamerule fallDamage false
 setblock 8 ~ 8 end_gateway{ExitPortal:{Y:999999},ExactTeleport:1}
 execute store result block 8 ~ 8 ExitPortal.X int 1 as @e[tag=PX] run scoreboard players get @s sh
 execute store result block 8 ~ 8 ExitPortal.Z int 1 as @e[tag=PZ] run scoreboard players get @s sh
-data modify storage pk I[0] set from storage pg ~.Z[1]
+data modify storage pk I insert 1 from storage pg ~.Z[1]
 
 ---
 
@@ -777,9 +777,6 @@ execute if data storage pg _[0] run data modify storage pk I insert 1 from stora
 
 # Teleports the player through the portal block at (8, 0/-64, 8) in the player's dimension,
 # and deletes the portal block.
--
-
-# TODO change other callers to use inline calling convention
 
 # Duration:4 is enough so that after the waiting ticks,
 # this newly-summoned AEC still exists but any loaded previous AECs will have despawned.
@@ -793,7 +790,6 @@ execute at @p[scores={pk=0}] run clone 8 0 8 8 0 8 ~ ~ ~ masked move
 data merge storage pk {H:1}
 data merge storage pk {H:1}
 data merge storage pk {H:1}
-tag @p add Z1
 
 execute at @e[tag=Z] run setblock ~ ~-1 ~ air
 # forceload remove only if the original forceload add wasn't a no-op
@@ -928,8 +924,7 @@ execute at @e[tag=V] run tp @p ~ ~2 ~
 setblock 8 ~ 8 end_gateway{ExitPortal:{Y:2},ExactTeleport:1}
 execute store result block 8 ~ 8 ExitPortal.X int 1 run data get storage pk BT.x
 execute store result block 8 ~ 8 ExitPortal.Z int 1 run data get storage pk BT.z
-tag @p remove Z1
-execute unless entity @p[tag=Z1] run data modify storage pk I prepend from storage pg ~.Z[1]
+data modify storage pk I[0] insert 1 from storage pg ~.Z[1][]
 execute at @p run setblock ~ ~1 ~ water
 
 # spawn 31 more markers and spread near player
