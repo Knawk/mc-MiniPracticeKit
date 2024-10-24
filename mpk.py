@@ -778,12 +778,17 @@ execute if data storage pg _[0] run data modify storage pk I insert 1 from stora
 # Teleports the player through the portal block at (8, 0/-64, 8) in the player's dimension,
 # and deletes the portal block.
 -
-execute at @p run summon area_effect_cloud ~ ~1 ~ {Duration:8,Tags:[Z]}
-execute at @p store result score @e[tag=Z] pk run forceload add ~ ~
+
+# TODO change other callers to use inline calling convention
+
+# Duration:4 is enough so that after the waiting ticks,
+# this newly-summoned AEC still exists but any loaded previous AECs will have despawned.
+execute at @p run summon area_effect_cloud ~ ~1 ~ {Duration:4,Tags:[Z]}
+execute at @e[tag=Z] store result score @s pk run forceload add ~ ~
 
 execute at @p align xyz run tp @p ~.5 ~ ~.5
-execute at @p if block 0 0 1 bedrock run clone 8 0 8 8 0 8 ~ ~ ~ masked move
-execute at @p run clone 8 -64 8 8 -64 8 ~ ~ ~ masked move
+execute at @p store success score @p pk run clone 8 -64 8 8 -64 8 ~ ~ ~ masked move
+execute at @p[scores={pk=0}] run clone 8 0 8 8 0 8 ~ ~ ~ masked move
 
 data merge storage pk {H:1}
 data merge storage pk {H:1}
@@ -850,6 +855,30 @@ gamerule announceAdvancements true
 
 # tick loop
 data modify storage pk I prepend from storage pg ~.T[]
+
+--- Z[6]
+
+# Save state teleportation
+-
+
+# store raw data (and ensure we only have one, or else later commands can fail)
+data modify storage pk S.L set from storage pk M[{S:1}]
+
+# teleport approximately (so that the NBT-teleported AEC will remain loaded)
+setblock 8 ~ 8 end_gateway{ExitPortal:{Y:999999},ExactTeleport:1}
+data modify block 8 ~ 8 ExitPortal.X set from storage pk S.L.Pos[0]
+data modify block 8 ~ 8 ExitPortal.Z set from storage pk S.L.Pos[2]
+data modify storage pk I[0] insert 1 from storage pg ~.Z[1][]
+
+# teleport to the right dimension
+execute if data storage pk S.L{Dimension:"minecraft:the_nether"} at @p in the_nether run tp @p ~ ~ ~
+execute if data storage pk S.L{Dimension:"minecraft:the_end"} at @p in the_end run tp @p ~ ~ ~
+
+# teleport exactly
+execute at @p run summon area_effect_cloud ~ ~ ~ {Tags:[S],Duration:1}
+data modify entity @e[tag=S,limit=1] Rotation set from storage pk S.L.Rotation
+data modify entity @e[tag=S,limit=1] Pos set from storage pk S.L.Pos
+tp @p @e[tag=S,limit=1]
 """).substitute())
 
 
@@ -1018,17 +1047,18 @@ execute as @p[gamemode=creative] run data modify storage pk S.items[-1].id set v
 execute as @p[gamemode=adventure] run data modify storage pk S.items[-1].id set value map
 execute as @p[gamemode=spectator] run data modify storage pk S.items[-1].id set value ender_eye
 
-# add auto script to remove filler items
+# add auto script to remove filler items and tp to correct coords
 data modify storage pk S.items append value {id:writable_book,Slot:4,Count:1,tag:{\\
-    pages:["clear @p cake{F:1}"],\\
+    pages:[\\
+        "clear @p cake{F:1}",\\
+        "data modify storage pk I[0] insert 1 from storage pg ~.Z[6][]"\\
+    ],\\
     display:{Name:'{"text":"AUTO"}'}\\
 }}
 
-# TODO do proper tp
-say tp isn't implemented yet, please F3+C and paste it into the barrel's AUTO book (remember to replace @s with @p)
-
 # store raw data so other tools can use it
 data modify storage pk S.items append value {id:paper,Slot:26,Count:1,tag:{\\
+    S:1,\\
     display:{Name:'{"text":"Raw data"}'}\\
 }}
 data modify storage pk S.items[-1].tag merge from entity @p
