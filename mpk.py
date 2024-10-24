@@ -1107,16 +1107,12 @@ TICK_PROGRAM = compile_spu_program(string.Template(
 data merge storage pk {H:1}
 
 # check for potion scripts
-
-execute at @p run tag @e[type=potion,distance=..8] add P
-# this data moved from Potion to Item sometime between 1.15.2 and 1.16.1
-execute as @e[tag=P] \\
-    unless data entity @s Item.tag.pages \\
-    unless data entity @s Potion.tag.pages \\
-    run tag @s remove P
-execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Item.tag.pages
-execute as @e[tag=P] run data modify storage pk I insert 1 from entity @s Potion.tag.pages
-kill @e[tag=P]
+# (the item tag moved from Potion to Item sometime between 1.15.2 and 1.16.1)
+execute at @p as @e[type=potion,distance=..8] store result score @s pk \\
+    run data modify storage pk I insert 1 from entity @s Item.tag.pages
+execute as @e[type=potion,scores={pk=0}] store result score @s pk \\
+    run data modify storage pk I insert 1 from entity @s Potion.tag.pages
+kill @e[type=potion,scores={pk=1}]
 
 # check and reset/re-enable save state trigger
 
