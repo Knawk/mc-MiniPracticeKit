@@ -68,7 +68,6 @@ execute at @e[tag=C] run fill ~ ~-1 ~ ~ ~1 ~ air
 
 # if activated on a block entity, spawn a renamed copy
 execute at @e[tag=C] \\
-    store success score @p pk \\
     if data block ~ ~-2 ~ CustomName \\
     run summon item ~ ~-1 ~ {Tags:[B],Item:{id:egg,Count:1},NoGravity:1,Invulnerable:1,Glowing:1}
 
@@ -79,10 +78,16 @@ data modify entity @e[tag=B,limit=1] Item.tag.display.Name set from storage pk B
 kill @e[tag=C]
 
 # if we didn't do a rename, track thrown triggers
-execute at @p[scores={pk=0}] run tag @e[type=item,distance=..16] add T
+execute unless entity @e[tag=B] \\
+    at @p \\
+    store result score @p pk \\
+    run tag @e[type=item,distance=..16] add T
 
-# proceed to process triggers if we didn't do a rename, and there's at least one trigger
-execute unless entity @e[tag=B] if entity @e[tag=T] run data remove storage pk I[0][]
+# remove B tag to avoid overwriting its data in a later activation
+tag @e[tag=B] remove B
+
+# proceed to process triggers if there's at least one
+execute if entity @e[tag=T] run data remove storage pk I[0][]
 
 # (if we get here, we either did a rename and the score is 1, or there are no triggers)
 tellraw @p[scores={pk=0}] [\\
@@ -90,7 +95,7 @@ tellraw @p[scores={pk=0}] [\\
     {\\
         "text":"Visit the website for info!",\\
         "color":"aqua",\\
-        "underlined":"true",\\
+        "underlined":true,\\
         "clickEvent":{"action":"open_url","value":"http://mpk.knawk.net"}\\
     }\\
 ]
