@@ -273,46 +273,35 @@ execute \\
     unless data storage pk {T:["minecraft:gilded_blackstone"]} \\
     run data remove storage pk I[0][]
 
-# if `spreadplayers under` isn't available, prepare to tp to Nether via portal
-scoreboard players reset ?SP pk
-execute store success score ?SP pk run spreadplayers ~ ~ 0 1 under 0 true @p[tag=,tag=_]
+# if `spreadplayers under` is available, load waiting mode program
+execute store result score ?S pk run spreadplayers ~ ~ 0 1 under 0 true _
+execute if score ?S pk = ?S pk run data modify storage pk I insert 1 from storage pg ~.W[]
 
-# otherwise load waiting mode program
-data modify storage pg _ set from storage pg ~.W
-execute if score ?SP pk matches 0 run data modify storage pk I[0] set from storage pg ~.Z[0]
-
-say Nether structure terrain teleportation is not supported in 1.15; sending you to Nether instead...
-data modify storage pk T append value "minecraft:netherrack"
+# otherwise just leave player in the default Nether location
+execute unless score ?S pk = ?S pk run say Sorry, can't teleport to fortress in this version.
 
 ---
 
 # go to blind coords or stronghold
-
-data remove storage pg _
-execute if data storage pk {T:["minecraft:end_portal_frame"]} run data modify storage pg _ set from storage pg ~.S
-execute if data storage pk {T:["minecraft:obsidian"]} run data modify storage pg _ set from storage pg ~.N0
-execute if data storage pg _ run data modify storage pk I[0] set from storage pg ~.Z[0]
+execute if data storage pk {T:["minecraft:end_portal_frame"]} \\
+    run data modify storage pk I insert 1 from storage pg ~.S[]
+execute if data storage pk {T:["minecraft:obsidian"]} \\
+    run data modify storage pk I insert 1 from storage pg ~.N0[]
 
 ---
 
 # set gamemode and difficulty
-
 execute if data storage pk {T:["minecraft:grass_block"]} run gamemode creative @a
 execute if data storage pk {T:["minecraft:iron_sword"]} run gamemode survival @a
 execute if data storage pk {T:["minecraft:map"]} run gamemode adventure @a
 execute if data storage pk {T:["minecraft:ender_eye"]} run gamemode spectator @a
-
 execute if data storage pk {T:["minecraft:leather_helmet"]} run difficulty peaceful
 execute if data storage pk {T:["minecraft:golden_helmet"]} run difficulty easy
 execute if data storage pk {T:["minecraft:iron_helmet"]} run difficulty normal
 execute if data storage pk {T:["minecraft:diamond_helmet"]} run difficulty hard
 
----
-
 # run auto scripts
-
-data modify storage pg _ set from storage pk B.A
-data modify storage pk I[0] set from storage pg ~.Z[0]
+data modify storage pk I insert 1 from storage pk B.A[]
 
 ---
 
@@ -390,7 +379,7 @@ summon armor_stand 0 0 0 {Tags:[A,D,DE],Passengers:[\\
 execute as @e[tag=A] run data merge entity @s {Marker:1}
 
 # kill all but best marker
-data modify storage pk I[0] insert 1 from storage pg ~.L0.S[0][0]
+data modify storage pk I[0] insert 1 from storage pg ~.L0.S[0][]
 scoreboard players set $$D sh 9999
 execute as @e[tag=M] run scoreboard players operation $$D sh < @s sh
 execute as @e[tag=M] unless score $$D sh = @s sh run kill @s
@@ -435,9 +424,10 @@ data modify storage pk I insert 1 from storage pg ~.Z[1]
 ---
 
 # teleport marker, wait for chunks to load if necessary
-tag @e[tag=M] add Q
 execute at @p align xz run tp @e[tag=M] ~ 61. ~
-execute if score ?A pk matches 0 run data modify storage pk I[0] set from storage pg ~.Z[3]
+execute if score ?A pk matches 0 \\
+    unless entity @e[tag=M] \\
+    run data modify storage pk I prepend from storage pg ~.Z[3]
 
 ---
 
@@ -497,7 +487,8 @@ scoreboard objectives remove sh
 """).substitute())
 
 
-NETHER_TERRAIN_PROGRAM_SETUP = compile_spu_program(string.Template("""
+NETHER_TERRAIN_PROGRAM_SETUP = compile_spu_program(string.Template(
+"""
 # remove Nether enter portal to let PortalCooldown decrease
 execute at @p run fill ~-16 ~-16 ~-16 ~15 ~15 ~15 air replace nether_portal
 
@@ -509,8 +500,10 @@ execute in the_nether run fill 0 1 0 7 1 7 bedrock
 execute in the_nether run fill 0 0 0 7 0 7 air
 
 # summon ray and wait for it to load
-execute in the_nether run summon armor_stand 0 96 0 {Tags:[R,Q],Passengers:[{id:armor_stand}]}
-execute if score ?A pk matches 0 run data modify storage pk I[0] set from storage pg ~.Z[3]
+execute in the_nether run summon armor_stand 0 96 0 {Tags:[R],Passengers:[{id:armor_stand}]}
+execute if score ?A pk matches 0 \\
+    unless entity @e[tag=R] \\
+    run data modify storage pk I prepend from storage pg ~.Z[3]
 
 --- N0[1]
 
@@ -526,7 +519,8 @@ data modify storage pk I[0] set from storage pg ~.Z[0]
 """).substitute())
 
 
-NETHER_TERRAIN_PROGRAM_SEARCH = compile_spu_program(string.Template("""
+NETHER_TERRAIN_PROGRAM_SEARCH = compile_spu_program(string.Template(
+"""
 title @p title "Please wait..."
 title @p actionbar ["Searching terrain ",{"score":{"objective":"pk","name":"$$_"}},"/10"]
 
@@ -615,12 +609,16 @@ kill @e[tag=D,tag=!NN]
 data modify storage pg _ set from storage pg ~.N2
 execute as @e[tag=N] run data modify storage pk I[0] set from storage pg ~.Z[0]
 
+# TODO replace above with this inlining?
+# execute as @e[tag=N] run data modify storage pk I insert 1 from storage pg ~.N2[]
+
 say No good terrain found!
 execute in the_nether run forceload remove all
 """).substitute())
 
 
-NETHER_TERRAIN_PROGRAM_FINISH = compile_spu_program(string.Template("""
+NETHER_TERRAIN_PROGRAM_FINISH = compile_spu_program(string.Template(
+"""
 execute if score BM pk matches 3.. run data remove storage pk I[0][]
 
 # build nether-side portal frame
@@ -802,11 +800,9 @@ execute if data storage pk R[] run data modify storage pk I[0] set from storage 
 
 --- Z[3]
 
-# Delay until an entity tagged Q is loaded
+# Delay 1gt, with no-op to allow busy-waiting by prepending this sequence to I.
 -
-
 data merge storage pk {H:1}
-execute unless entity @e[tag=Q] run data modify storage pk I[0] set from storage pg ~.Z[3]
 
 --- Z[4]
 
@@ -1178,7 +1174,7 @@ def give_stronghold_portal_book():
     commands = [
         # wait for player teleport
         "data merge storage pk {H:1}",
-        "execute at @p run summon armor_stand ~ ~ ~ {Tags:[p,Q],Marker:1,Invisible:1}",
+        "execute at @p run summon armor_stand ~ ~ ~ {Tags:[p],Marker:1,Invisible:1}",
         (
             "execute as @e[tag=p] at @s"
             # use player's yaw but not pitch
