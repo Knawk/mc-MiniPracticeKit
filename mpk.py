@@ -517,10 +517,10 @@ execute as @e[tag=R] store result entity @s Rotation[0] float 1 run data get ent
 execute as @e[tag=R] at @s run tp @e[type=armor_stand,tag=!R,distance=..1] ~ ~ ~ ~180 ~
 execute at @e[tag=R] as @e[type=armor_stand,distance=..1] run data merge entity @s {Tags:[R],Marker:1}
 
-# start search
+# start search portion, and queue finish portion in advance
 scoreboard players set $$_ pk 1
-data modify storage pg _ set from storage pg ~.N1
-data modify storage pk I[0] set from storage pg ~.Z[0]
+data modify storage pk I insert 1 from storage pg ~.N2[]
+data modify storage pk I insert 1 from storage pg ~.N1[]
 """).substitute())
 
 
@@ -600,64 +600,49 @@ execute as @e[tag=R] at @s run tp @s ~ ~ ~ ~66 ~
 scoreboard players add $$_ pk 1
 
 # if no good dummy is left, and we haven't tried all angles, try again
-data modify storage pg _ set from storage pg ~.N1
 execute unless entity @e[tag=N] \\
     unless score $$_ pk matches 11 \\
-    run data modify storage pk I[0] set from storage pg ~.Z[0]
-
-# clean up rays, and all dummies except at most a good one
-kill @e[tag=R]
-tag @e[tag=N,limit=1] add NN
-kill @e[tag=D,tag=!NN]
-
-# finish up if there's a good dummy
-data modify storage pg _ set from storage pg ~.N2
-execute as @e[tag=N] run data modify storage pk I[0] set from storage pg ~.Z[0]
-
-# TODO replace above with this inlining?
-# execute as @e[tag=N] run data modify storage pk I insert 1 from storage pg ~.N2[]
-
-say No good terrain found!
-execute in the_nether run forceload remove all
+    run data modify storage pk I insert 1 from storage pg ~.N1[]
 """).substitute())
 
 
 NETHER_TERRAIN_PROGRAM_FINISH = compile_spu_program(string.Template(
 """
-execute if score BM pk matches 3.. run data remove storage pk I[0][]
+# clean up rays, and all dummies except at most a good one
+kill @e[tag=R]
+tag @e[tag=N,limit=1] add NN
+kill @e[tag=D,tag=!NN]
 
-# build nether-side portal frame
+execute unless entity @e[tag=N] run say No good terrain found!
+execute unless entity @e[tag=N] run data remove storage pk I[2]
+
+# (blind modes 1-2) build nether-side portal frame
+execute if score BM pk matches 3.. run data remove storage pk I[0][]
 execute at @e[tag=N] run fill ~-1 ~1 ~-1 ~2 ~3 ~1 air
 execute at @e[tag=N] run fill ~-1 ~ ~ ~2 ~4 ~ obsidian
 execute at @e[tag=N] run fill ~ ~1 ~ ~1 ~3 ~ air
 
 --- N2[1]
 
-say Done! Teleporting...
-
-# add y-offset to avoid teleporting into partial blocks like soul sand
+# teleport if good dummy remains (with offset to avoid clipping into partial blocks like soul sand)
 execute at @e[tag=N] run tp @p ~ ~1.063 ~
 
-# bit of cleanup
+# unconditional cleanup
+title @p reset
 kill @e[tag=N]
 execute in the_nether run forceload remove all
 
-# wait for teleport and PortalCooldown:0 before adding portal
-execute in the_nether unless entity @p[x=0,nbt={PortalCooldown:0}] run data modify storage pk I prepend from storage pk I[0]
-data merge storage pk {H:1}
-
 --- N2[2]
 
-title @p reset
+say Done! Teleporting...
 
+# wait for teleport and PortalCooldown:0 before adding portal
+execute in the_nether unless entity @p[x=0,nbt={PortalCooldown:0}] run data modify storage pk I prepend from storage pg ~.Z[3]
+
+# (blind mode 1) light portal and wait for teleport before allowing gamemode change
 execute if score BM pk matches 2.. run data remove storage pk I[0][]
-
-# light portal
 execute at @p run setblock ~ ~1 ~ fire
-
-# wait for teleport before allowing gamemode change
-execute in the_nether if entity @p[x=0] run data modify storage pk I prepend from storage pk I[0]
-data merge storage pk {H:1}
+execute in the_nether if entity @p[x=0] run data modify storage pk I prepend from storage pg ~.Z[3]
 """).substitute())
 
 
@@ -763,11 +748,7 @@ kill @e[tag=M]
 # `data modify storage pk I[0] set from storage pg ~.Z[...]`
 UTIL_PROGRAMS = compile_spu_program(string.Template(
 """
-# Loads the program at pg._ into the instruction buffer.
--
-data modify storage pk I insert 1 from storage pg _[-1]
-data remove storage pg _[-1]
-execute if data storage pg _[0] run data modify storage pk I insert 1 from storage pg ~.Z[0]
+# (Z[0] is currently unused)
 
 --- Z[1]
 
