@@ -231,13 +231,6 @@ data merge storage pk {H:1}
 
 ---
 
-# teleport to BT
-
-data modify storage pg _ set from storage pg ~.B
-execute if data storage pk {T:["minecraft:heart_of_the_sea"]} run data modify storage pk I[0] set from storage pg ~.Z[0]
-
----
-
 # locate bastions
 
 execute unless data storage pk {T:["minecraft:blaze_rod"]} run data remove storage pk I[0][]
@@ -878,92 +871,6 @@ tp @p @e[tag=S,limit=1]
 """).substitute())
 
 
-BURIED_TREASURE_PROGRAM = compile_spu_program(string.Template("""
-execute if score ?A pk matches 0 run say Can't teleport to buried treasure in this version!
-execute if score ?A pk matches 0 run data remove storage pk I[0][]
-
-title @p title "Please wait..."
-scoreboard players reset $$_ pk
-
-# start of loop
-data modify storage pk J set from storage pk I[0]
-scoreboard players add $$_ pk 1
-title @p actionbar ["Searching ",{"score":{"objective":"pk","name":"$$_"}}]
-
-# clean up markers from last attempt
-kill @e[tag=M]
-
-# summon marker for search, iterate angle
-execute at @e[tag=V] run summon armor_stand 0 ~ 0 {Marker:1,Tags:[M]}
-scoreboard players add $$a pk 22249
-execute store result entity @e[tag=M,limit=1] Rotation[0] float .01 run scoreboard players get $$a pk
-
-# check biomes: close ocean/forest/beaches, no close desert or tundra
-execute as @e[tag=M] at @s positioned ^ ^ ^999900 store result score @s pk run locatebiome deep_ocean
-execute as @e[tag=M,scores={pk=..100}] at @s positioned ^ ^ ^999900 store result score @s pk run locatebiome forest
-execute as @e[tag=M,scores={pk=..100}] at @s positioned ^ ^ ^999999 store result score @s pk run locatebiome beach
-execute as @e[tag=M,scores={pk=..100}] at @s positioned ^-100 ^ ^999800 store result score @s pk run locatebiome beach
-execute as @e[tag=M,scores={pk=..100}] at @s positioned ^100 ^ ^999800 store result score @s pk run locatebiome beach
-kill @e[tag=M,scores={pk=100..}]
-execute as @e[tag=M] at @s positioned ^ ^ ^999900 store result score @s pk run locatebiome desert
-execute as @e[tag=M,scores={pk=800..}] at @s positioned ^ ^ ^999900 store result score @s pk run locatebiome snowy_tundra
-execute unless entity @e[tag=M,scores={pk=800..}] run data modify storage pk I[0] set from storage pk J
-
-# store BT coords
-data remove storage pk BT
-setblock 8 ~ 8 air
-setblock 8 ~ 8 chest
-execute at @e[tag=M] positioned ^ ^ ^999900 run loot replace block 8 ~ 8 container.0 loot chests/shipwreck_map
-data modify storage pk BT set from block 8 ~ 8 Items[].tag.Decorations[]
-# try again if no BT was found
-execute unless data storage pk BT run data modify storage pk I[0] set from storage pk J
-scoreboard players add $$_ pk 400
-
-# reset momentum and teleport player
-execute at @e[tag=V] run tp @p ~ ~2 ~
-setblock 8 ~ 8 end_gateway{ExitPortal:{Y:2},ExactTeleport:1}
-execute store result block 8 ~ 8 ExitPortal.X int 1 run data get storage pk BT.x
-execute store result block 8 ~ 8 ExitPortal.Z int 1 run data get storage pk BT.z
-data modify storage pk I[0] insert 1 from storage pg ~.Z[1][]
-execute at @p run setblock ~ ~1 ~ water
-
-# spawn 31 more markers and spread near player
-summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
-execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
-execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
-execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
-execute at @e[tag=M] run summon armor_stand ~ ~ ~ {Marker:1,Tags:[M]}
-execute at @p store success score @p pk run spreadplayers ~ ~ 4 56 false @e[tag=M]
-data merge storage pk {H:1}
-
-# try again if there's not enough land
-execute if score @p pk matches 0 run data modify storage pk I[0] set from storage pk J
-
-# try again if there aren't enough trees, or searched enough BTs
-execute as @e[tag=M] at @s store success score @s pk if block ~ ~-1 ~ #leaves
-execute as @e[tag=M,scores={pk=0}] at @s store success score @s pk run fill ~-8 ~-4 ~-8 ~8 ~4 ~8 oak_leaves[persistent=true] replace oak_leaves
-execute if score $$_ pk matches ..999 unless entity @e[tag=M,scores={pk=1}] run data modify storage pk I[0] set from storage pk J
-
-# try again if there are no reasonable spawn points
-# only consider locations within 50ed-loading distance of bt (approx)
-execute at @p positioned ~ 52 ~ run kill @e[tag=M,distance=60..]
-# avoid spawning on top of trees
-execute as @e[tag=M] at @s \\
-    unless block ~ ~-1 ~ grass_block \\
-    unless block ~ ~-1 ~ sand \\
-    run kill @s
-execute unless entity @e[tag=M] run data modify storage pk I[0] set from storage pk J
-
-execute at @e[tag=M,sort=random,limit=1] run tp @p ~ ~ ~ 0 0
-
----
-
-# cleanup
-title @p reset
-kill @e[tag=M]
-""").substitute())
-
-
 SAVE_STATE_PROGRAM = compile_spu_program(string.Template(
 """
 -
@@ -1180,7 +1087,6 @@ def give_mpk():
         'N1': NETHER_TERRAIN_PROGRAM_SEARCH,
         'N2': NETHER_TERRAIN_PROGRAM_FINISH,
         'W': WAITING_MODE_PROGRAM,
-        # 'B': BURIED_TREASURE_PROGRAM,
         'Z': UTIL_PROGRAMS,
         'V': SAVE_STATE_PROGRAM,
         'T': TICK_PROGRAM,
