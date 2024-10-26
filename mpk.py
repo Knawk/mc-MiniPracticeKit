@@ -830,10 +830,15 @@ data modify storage pk I prepend from storage pg ~.T[]
 --- Z[6]
 
 # Save state teleportation
--
 
 # store raw data (and ensure we only have one, or else later commands can fail)
 data modify storage pk S.L set from storage pk M[{S:1}]
+
+# make sure the End obsidian platform is present
+execute if data storage pk S.L{Dimension:"minecraft:the_end"} \\
+    run summon item 8 ~ 8 {Item:{id:egg,Count:1},Age:5999,PickupDelay:9}
+setblock 8 ~ 8 end_portal
+data merge storage pk {H:1}
 
 # teleport approximately (so that the NBT-teleported AEC will remain loaded)
 setblock 8 ~ 8 end_gateway{ExitPortal:{Y:999999},ExactTeleport:1}
