@@ -877,14 +877,6 @@ scoreboard players set $$i save 0
 # save loop body
 data modify storage pk J set from storage pk I[0]
 
-# # TODO remove
-# tellraw @p [\\
-#     "$$i save = ",\\
-#     {"score":{"objective":"save","name":"$$i"}},\\
-#     ", S.i[0] = ",\\
-#     {"nbt":"S.i[0]","storage":"pk"}\\
-# ]
-
 # score @p save is 1 if inv has an item for current slot
 execute store result score $$s save run data get storage pk S.i[0].Slot
 execute store result score @p save if score $$s save = $$i save
@@ -903,12 +895,6 @@ execute as @p[scores={save=0}] run data modify storage pk S.items append value {
 scoreboard players operation $$t save = $$i save
 execute if score $$i save matches 9.. run scoreboard players remove $$t save 9
 execute store result storage pk S.items[-1].Slot byte 1 run scoreboard players get $$t save
-
-# # TODO remove
-# tellraw @p [\\
-#     "added ",\\
-#     {"nbt":"S.items[-1]","storage":"pk"}\\
-# ]
 
 # copy items to hotbar chest storage, prepare for filling inner inv items
 execute if score $$i save matches 8 run data modify storage pk I prepend from storage pg ~.V[1]
@@ -978,16 +964,6 @@ data modify storage pk S.cont append value {id:barrel,Count:1}
 # if we just filled the hotbar chest, the next container should be the inner inventory chest
 execute if score $$i save matches 8 \\
     run data modify storage pk S.cont[-1] merge value {id:chest,Slot:1}
-
-# # TODO remove
-# tellraw @p [\\
-#     "at V[1] end, S.cont[-2] = ",\\
-#     {"nbt":"S.cont[-2]","storage":"pk"}\\
-# ]
-# tellraw @p [\\
-#     "prepared S.cont[-1] = ",\\
-#     {"nbt":"S.cont[-1]","storage":"pk"}\\
-# ]
 """
 ).substitute())
 
