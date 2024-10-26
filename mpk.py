@@ -858,72 +858,46 @@ tp @p @e[tag=S,limit=1]
 """).substitute())
 
 
+# important storages (all in pk):
+#   - S.i is the working copy of the player's inventory (gets cleared one by one)
+#   - S.j is the list of items to be placed into containers
+#   - S.k is the list of containers
 SAVE_STATE_PROGRAM = compile_spu_program(string.Template(
 """
--
-data remove storage pk I[1][0]
-
-# S.cont are the containers
-data modify storage pk S set value {cont:[{id:chest,Slot:0,Count:1}]}
-
 execute at @p run summon armor_stand ~ ~ ~ {Tags:[SS],Invulnerable:1,NoGravity:1,Glowing:1}
 
-# working copy of inventory
+data modify storage pk S set value {k:[{id:chest,Slot:0,Count:1}]}
 data modify storage pk S.i set from entity @p Inventory
 
-# $$i is loop counter
-scoreboard players set $$i save 0
+# transfer inv items to two lists (hotbar and inner inv), with filler items for unused slots.
+# hotbar items are transferred into chest NBT in S.k[0],
+# and inner inv items are just transferred into S.j.
+# score @p save is the loop counter.
+scoreboard players set @p save 0
+execute as @p[scores={save=..35}] run data modify storage pk I prepend from storage pg ~.V[1]
 
-# save loop body
-data modify storage pk J set from storage pk I[0]
-
-# score @p save is 1 if inv has an item for current slot
-execute store result score $$s save run data get storage pk S.i[0].Slot
-execute store result score @p save if score $$s save = $$i save
-
-# S.items is the contents of the container we're currently building.
-
-# if the inv had an item for slot $$i, add it to S.items and remove from S.i
-execute as @p[scores={save=1}] run data modify storage pk S.items append from storage pk S.i[0]
-execute as @p[scores={save=1}] run data remove storage pk S.i[0]
-
-# otherwise add an unstackable filler item (cake has a short name and no default NBT).
-# other options: saddle, potion, red_bed (the only one with a hand-mineable block form).
-execute as @p[scores={save=0}] run data modify storage pk S.items append value {id:cake,Count:1,tag:{F:1}}
-
-# set the added item's slot correctly. if its slot is 9-35 (inner inv), adjust to 0-26 (chest).
-scoreboard players operation $$t save = $$i save
-execute if score $$i save matches 9.. run scoreboard players remove $$t save 9
-execute store result storage pk S.items[-1].Slot byte 1 run scoreboard players get $$t save
-
-# copy items to hotbar chest storage, prepare for filling inner inv items
-execute if score $$i save matches 8 run data modify storage pk I prepend from storage pg ~.V[1]
-
-# repeat loop if there are more slots to copy
-scoreboard players add $$i save 1
-execute if score $$i save matches ..35 run data modify storage pk I[0] set from storage pk J
-
-# otherwise copy items to inner inv chest storage, prepare for filling barrel items
-data modify storage pk I prepend from storage pg ~.V[1]
+# copy items from S.j to inner inv chest NBT at S.k[1], and prepare for filling barrel items
+data modify storage pk I[0] insert 1 from storage pg ~.V[2][]
+data modify storage pk S.k[2].id set value barrel
 
 # add hotbar and inner inv chest storages to items
-data modify storage pk S.items append from storage pk S.cont[{id:chest}]
+data modify storage pk S.j append from storage pk S.k[{id:chest}]
 
 # add difficulty trigger
-data modify storage pk S.items append value {id:leather_helmet,Slot:2,Count:1}
+data modify storage pk S.j append value {id:leather_helmet,Slot:2,Count:1}
 execute store result score @p save run difficulty
-execute as @p[scores={save=1}] run data modify storage pk S.items[-1].id set value golden_helmet
-execute as @p[scores={save=2}] run data modify storage pk S.items[-1].id set value iron_helmet
-execute as @p[scores={save=3}] run data modify storage pk S.items[-1].id set value diamond_helmet
+execute as @p[scores={save=1}] run data modify storage pk S.j[-1].id set value golden_helmet
+execute as @p[scores={save=2}] run data modify storage pk S.j[-1].id set value iron_helmet
+execute as @p[scores={save=3}] run data modify storage pk S.j[-1].id set value diamond_helmet
 
 # add gamemode trigger
-data modify storage pk S.items append value {id:iron_sword,Slot:3,Count:1}
-execute as @p[gamemode=creative] run data modify storage pk S.items[-1].id set value grass_block
-execute as @p[gamemode=adventure] run data modify storage pk S.items[-1].id set value map
-execute as @p[gamemode=spectator] run data modify storage pk S.items[-1].id set value ender_eye
+data modify storage pk S.j append value {id:iron_sword,Slot:3,Count:1}
+execute as @p[gamemode=creative] run data modify storage pk S.j[-1].id set value grass_block
+execute as @p[gamemode=adventure] run data modify storage pk S.j[-1].id set value map
+execute as @p[gamemode=spectator] run data modify storage pk S.j[-1].id set value ender_eye
 
 # add auto script to remove filler items and tp to correct coords
-data modify storage pk S.items append value {id:writable_book,Slot:4,Count:1,tag:{\\
+data modify storage pk S.j append value {id:writable_book,Slot:4,Count:1,tag:{\\
     pages:[\\
         "clear @p cake{F:1}",\\
         "data modify storage pk I[0] insert 1 from storage pg ~.Z[6][]"\\
@@ -932,38 +906,55 @@ data modify storage pk S.items append value {id:writable_book,Slot:4,Count:1,tag
 }}
 
 # store raw data so other tools can use it
-data modify storage pk S.items append value {id:paper,Slot:26,Count:1,tag:{\\
+data modify storage pk S.j append value {id:paper,Slot:26,Count:1,tag:{\\
     S:1,\\
     display:{Name:'{"text":"Raw data"}'}\\
 }}
-data modify storage pk S.items[-1].tag merge from entity @p
+data modify storage pk S.j[-1].tag merge from entity @p
 # tag.d is the difficulty
-execute store result storage pk S.items[-1].tag.d int 1 run difficulty
+execute store result storage pk S.j[-1].tag.d int 1 run difficulty
 
 # copy items to barrel storage
-data modify storage pk I prepend from storage pg ~.V[1]
+data modify storage pk I[0] insert 1 from storage pg ~.V[2][]
 
 # place barrel on armor stand's head, remove save state tag
-data modify entity @e[tag=SS,limit=1] ArmorItems[3] set from storage pk S.cont[-2]
+data modify entity @e[tag=SS,limit=1] ArmorItems[3] set from storage pk S.k[-2]
 tag @e[tag=SS] remove SS
 
 --- V[1]
 
+# inv item loop body
 -
-# remove call instruction
-data remove storage pk I[1][0]
 
-# copy S.items into the last container's block entity Items
-data modify storage pk S.cont[-1].tag.BlockEntityTag.Items set from storage pk S.items
+# by default, add an unstackable filler item (cake has a short name and no default NBT).
+# other options: saddle, potion, red_bed (the only one with a hand-mineable block form).
+data modify storage pk S.j append value {id:cake,Count:1,tag:{F:1}}
 
-# clear S.items to prepare for filling the next container
-data remove storage pk S.items
+# if the inv had an item for the current slot, overwrite the filler item and remove the original
+execute store result score $$s save run data get storage pk S.i[0].Slot
+execute if score $$s save = @p save run data modify storage pk S.j[-1] set from storage pk S.i[0]
+execute if score $$s save = @p save run data remove storage pk S.i[0]
 
-# add a new container
-data modify storage pk S.cont append value {id:barrel,Count:1}
-# if we just filled the hotbar chest, the next container should be the inner inventory chest
-execute if score $$i save matches 8 \\
-    run data modify storage pk S.cont[-1] merge value {id:chest,Slot:1}
+# set the added item's slot correctly. if its slot is 9-35 (inner inv), adjust to 0-26 (chest).
+scoreboard players operation $$t save = @p save
+execute as @p[scores={save=9..}] run scoreboard players remove $$t save 9
+execute store result storage pk S.j[-1].Slot byte 1 run scoreboard players get $$t save
+
+# copy items to hotbar chest storage, prepare for filling inner inv items
+execute as @p[scores={save=8}] run data modify storage pk I[0] insert 1 from storage pg ~.V[2][]
+
+scoreboard players add @p save 1
+
+--- V[2]
+
+# copy items into the last container's block entity Items
+data modify storage pk S.k[-1].tag.BlockEntityTag.Items set from storage pk S.j
+
+# clear items to prepare for filling the next container
+data remove storage pk S.j
+
+# add a new container (with default data for the inner inventory chest)
+data modify storage pk S.k append value {id:chest,Count:1,Slot:1}
 """
 ).substitute())
 
@@ -986,7 +977,7 @@ kill @e[type=potion,scores={pk=1}]
 
 # check and reset/re-enable save state trigger
 
-execute as @p[scores={save=1}] run data modify storage pk I prepend from storage pg ~.V[0]
+execute as @p[scores={save=1}] run data modify storage pk I[0] insert 1 from storage pg ~.V[0][]
 scoreboard players reset @p save
 scoreboard players enable @p save
 """).substitute())
