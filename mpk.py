@@ -983,27 +983,25 @@ tp @p @e[tag=S,limit=1]
 # TODO remove
 gamemode survival @p
 
-# set score @p pk to targetHp = ceil(savedHp)
-execute store result score $$t pk run data get storage pk S.L.Health -1
-scoreboard players set @p pk 0
-scoreboard players operation @p pk -= $$t pk
+# set score @p pk to targetHp = -ceil(savedHp)
+execute store result score @p pk run data get storage pk S.L.Health -1
 
 # set absorption amount to targetHp's next highest multiple of 4.
 # current hp (normal + absorption) = 24 + floor(targetHp / 4) * 4.
 effect give @p absorption
-effect give @p[scores={pk=4..}] absorption 1 1
-effect give @p[scores={pk=8..}] absorption 1 2
-effect give @p[scores={pk=12..}] absorption 1 3
-effect give @p[scores={pk=16..}] absorption 1 4
-effect give @p[scores={pk=20}] absorption 1 5
+effect give @p[scores={pk=..-4}] absorption 1 1
+effect give @p[scores={pk=..-8}] absorption 1 2
+effect give @p[scores={pk=..-12}] absorption 1 3
+effect give @p[scores={pk=..-16}] absorption 1 4
+effect give @p[scores={pk=-20}] absorption 1 5
 
 # set additional max hp to (targetHp % 4), and heal normal hp to max.
 # current hp (normal + absorption) = 24 + targetHp.
 scoreboard players set 4 pk 4
 scoreboard players operation @p pk %= 4 pk
-attribute @p[scores={pk=1}] generic.max_health base set 21
+attribute @p[scores={pk=1}] generic.max_health base set 23
 attribute @p[scores={pk=2}] generic.max_health base set 22
-attribute @p[scores={pk=3}] generic.max_health base set 23
+attribute @p[scores={pk=3}] generic.max_health base set 21
 data merge storage pk {H:1}
 effect give @p instant_health 1 9
 data merge storage pk {H:1}
