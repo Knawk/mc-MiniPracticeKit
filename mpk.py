@@ -51,6 +51,7 @@ tellraw @p [{"text":"MiniPracticeKit v0.7-beta2 activated!","color":"aqua","bold
 gamerule announceAdvancements false
 scoreboard objectives add pk dummy
 scoreboard objectives add save trigger
+scoreboard objectives add hp health
 
 # add setup flag
 scoreboard players set $$S pk 1
@@ -826,35 +827,6 @@ gamerule announceAdvancements true
 
 # tick loop
 data modify storage pk I prepend from storage pg ~.T[]
-
---- Z[6]
-
-# Save state teleportation
-
-# store raw data (and ensure we only have one, or else later commands can fail)
-data modify storage pk S.L set from storage pk M[{S:1}]
-
-# make sure the End obsidian platform is present
-execute if data storage pk S.L{Dimension:"minecraft:the_end"} \\
-    run summon item 8 ~ 8 {Item:{id:egg,Count:1},Age:5999,PickupDelay:9}
-setblock 8 ~ 8 end_portal
-data merge storage pk {H:1}
-
-# teleport approximately (so that the NBT-teleported AEC will remain loaded)
-setblock 8 ~ 8 end_gateway{ExitPortal:{Y:999999},ExactTeleport:1}
-data modify block 8 ~ 8 ExitPortal.X set from storage pk S.L.Pos[0]
-data modify block 8 ~ 8 ExitPortal.Z set from storage pk S.L.Pos[2]
-data modify storage pk I[0] insert 1 from storage pg ~.Z[1][]
-
-# teleport to the right dimension
-execute if data storage pk S.L{Dimension:"minecraft:the_nether"} at @p in the_nether run tp @p ~ ~ ~
-execute if data storage pk S.L{Dimension:"minecraft:the_end"} at @p in the_end run tp @p ~ ~ ~
-
-# teleport exactly
-execute at @p run summon area_effect_cloud ~ ~ ~ {Tags:[S],Duration:1}
-data modify entity @e[tag=S,limit=1] Rotation set from storage pk S.L.Rotation
-data modify entity @e[tag=S,limit=1] Pos set from storage pk S.L.Pos
-tp @p @e[tag=S,limit=1]
 """).substitute())
 
 
@@ -896,11 +868,11 @@ execute as @p[gamemode=creative] run data modify storage pk S.j[-1].id set value
 execute as @p[gamemode=adventure] run data modify storage pk S.j[-1].id set value map
 execute as @p[gamemode=spectator] run data modify storage pk S.j[-1].id set value ender_eye
 
-# add auto script to remove filler items and tp to correct coords
+# add auto script to remove filler items and do other state-loading logic
 data modify storage pk S.j append value {id:writable_book,Slot:4,Count:1,tag:{\\
     pages:[\\
         "clear @p cake{F:1}",\\
-        "data modify storage pk I[0] insert 1 from storage pg ~.Z[6][]"\\
+        "data modify storage pk I[0] insert 1 from storage pg ~.U[0][]"\\
     ],\\
     display:{Name:'{"text":"AUTO"}'}\\
 }}
@@ -957,6 +929,102 @@ data remove storage pk S.j
 data modify storage pk S.k append value {id:chest,Count:1,Slot:1}
 """
 ).substitute())
+
+
+LOAD_STATE_PROGRAM = compile_spu_program(string.Template(
+"""
+# (Entrypoint for internal save-state loading stuff)
+
+###
+### Restore dimension/position/rotation
+###
+
+# store raw data (and ensure we only have one, or else later commands can fail)
+data modify storage pk S.L set from storage pk M[{S:1}]
+
+# make sure the End obsidian platform is present
+execute if data storage pk S.L{Dimension:"minecraft:the_end"} \\
+    run summon item 8 ~ 8 {Item:{id:egg,Count:1},Age:5999,PickupDelay:9}
+setblock 8 ~ 8 end_portal
+data merge storage pk {H:1}
+
+# teleport approximately (so that the NBT-teleported AEC will remain loaded)
+setblock 8 ~ 8 end_gateway{ExitPortal:{Y:999999},ExactTeleport:1}
+data modify block 8 ~ 8 ExitPortal.X set from storage pk S.L.Pos[0]
+data modify block 8 ~ 8 ExitPortal.Z set from storage pk S.L.Pos[2]
+data modify storage pk I[0] insert 1 from storage pg ~.Z[1][]
+
+# teleport to the right dimension
+execute if data storage pk S.L{Dimension:"minecraft:the_nether"} at @p in the_nether run tp @p ~ ~ ~
+execute if data storage pk S.L{Dimension:"minecraft:the_end"} at @p in the_end run tp @p ~ ~ ~
+
+# teleport exactly
+execute at @p run summon area_effect_cloud ~ ~ ~ {Tags:[S],Duration:1}
+data modify entity @e[tag=S,limit=1] Rotation set from storage pk S.L.Rotation
+data modify entity @e[tag=S,limit=1] Pos set from storage pk S.L.Pos
+tp @p @e[tag=S,limit=1]
+
+--- U[1]
+# TODO remove sequence divider
+
+###
+### Restore health (assumes initial 20hp)
+###
+
+gamemode survival @p
+
+# increase max hp to 26 (to give buffer for healing)
+attribute @p generic.max_health base set 26
+
+data merge storage pk {H:1}
+
+# heal up to target hp (mod 3).
+# we must heal at least once so the hp scoreboard gets populated.
+# we need both numeric `Id` and resource `id` to support both pre- and post-1.20.2.
+
+# summon an instant healing AEC (+2hp), to be modified later
+execute at @p run summon area_effect_cloud ~ ~ ~ \\
+    {Tags:[A],Effects:[{Id:6,id:healing}],Age:-1,Duration:1}
+
+# fetch target hp at scale -1, then re-invert to store ceil(targetHp) in @p and AEC's scores
+execute store result score $$t pk run data get storage pk S.L.Health -1
+execute store result score @p pk run scoreboard players operation @e[tag=A] pk -= $$t pk
+
+# calculate targetHp % 3
+scoreboard players set 3 pk 3
+scoreboard players operation @e[tag=A] pk %= 3 pk
+
+# if targetHp % 3 == 0, heal player to 24hp
+execute as @e[tag=A,scores={pk=0}] \\
+    run data modify entity @s Effects[0] merge {Amplifier:1,amplifier:1}
+# if targetHp % 3 == 2, heal player to 26hp
+execute as @e[tag=A,scores={pk=2}] \\
+    run data modify entity @s Effects[0] merge {Amplifier:2,amplifier:2}
+# otherwise, unmodified AEC will heal player to 22hp
+
+# apply -3hp/gt until target hp reached
+execute if score @p hp > @p pk run data modify storage pk I prepend from storage pg ~.U[2]
+
+# put max health back
+attribute @p generic.max_health base set 20
+
+###
+### Restore hunger (TBD)
+###
+
+# implementation sketch for restoring hunger-related values:
+#   - first apply max-level hunger effect until desired foodLevel
+#   - then also apply saturation effect (TODO level?) until desired foodLevel + foodSatLevel
+#   - not sure if it's feasible to restore foodExhaustionLevel
+#   - it's definitely not possible to restore foodTickTimer
+
+--- U[2]
+
+-
+data merge storage pk {H:1}
+execute at @p run summon area_effect_cloud ~ ~ ~ {Effects:[{Id:7,id:harming}],Age:-1,Duration:1}
+
+""").substitute())
 
 
 # sequences to run every tick.
@@ -1043,6 +1111,7 @@ def give_mpk():
         'W': WAITING_MODE_PROGRAM,
         'Z': UTIL_PROGRAMS,
         'V': SAVE_STATE_PROGRAM,
+        'U': LOAD_STATE_PROGRAM,
         'T': TICK_PROGRAM,
     }.items())
     program_carrier = '{id:armor_stand,Marker:1b,Invisible:1b,HandItems:[{Count:1b,id:egg,tag:{%s}}],Tags:["C"]}' % (programs,)
