@@ -51,7 +51,6 @@ tellraw @p [{"text":"MiniPracticeKit v0.7-beta2 activated!","color":"aqua","bold
 gamerule announceAdvancements false
 scoreboard objectives add pk dummy
 scoreboard objectives add save trigger
-scoreboard objectives add hp health
 
 # add setup flag
 scoreboard players set $$S pk 1
@@ -964,50 +963,6 @@ data modify entity @e[tag=S,limit=1] Rotation set from storage pk S.L.Rotation
 data modify entity @e[tag=S,limit=1] Pos set from storage pk S.L.Pos
 tp @p @e[tag=S,limit=1]
 
---- U[1]
-# TODO remove sequence divider
-
-###
-### Restore health (assumes initial 20hp)
-###
-
-gamemode survival @p
-
-# increase max hp to 26 (to give buffer for healing)
-attribute @p generic.max_health base set 26
-
-data merge storage pk {H:1}
-
-# heal up to target hp (mod 3).
-# we must heal at least once so the hp scoreboard gets populated.
-# we need both numeric `Id` and resource `id` to support both pre- and post-1.20.2.
-
-# summon an instant healing AEC (+2hp), to be modified later
-execute at @p run summon area_effect_cloud ~ ~ ~ \\
-    {Tags:[A],Effects:[{Id:6,id:healing}],Age:-1,Duration:1}
-
-# fetch target hp at scale -1, then re-invert to store ceil(targetHp) in @p and AEC's scores
-execute store result score $$t pk run data get storage pk S.L.Health -1
-execute store result score @p pk run scoreboard players operation @e[tag=A] pk -= $$t pk
-
-# calculate targetHp % 3
-scoreboard players set 3 pk 3
-scoreboard players operation @e[tag=A] pk %= 3 pk
-
-# if targetHp % 3 == 0, heal player to 24hp
-execute as @e[tag=A,scores={pk=0}] \\
-    run data modify entity @s Effects[0] merge {Amplifier:1,amplifier:1}
-# if targetHp % 3 == 2, heal player to 26hp
-execute as @e[tag=A,scores={pk=2}] \\
-    run data modify entity @s Effects[0] merge {Amplifier:2,amplifier:2}
-# otherwise, unmodified AEC will heal player to 22hp
-
-# apply -3hp/gt until target hp reached
-execute if score @p hp > @p pk run data modify storage pk I prepend from storage pg ~.U[2]
-
-# put max health back
-attribute @p generic.max_health base set 20
-
 ###
 ### Restore hunger (TBD)
 ###
@@ -1018,12 +973,48 @@ attribute @p generic.max_health base set 20
 #   - not sure if it's feasible to restore foodExhaustionLevel
 #   - it's definitely not possible to restore foodTickTimer
 
---- U[2]
+--- U[1]
+# TODO remove sequence divider
 
--
+###
+### Restore health (assumes survival/adventure mode)
+###
+
+# TODO remove
+gamemode survival @p
+
+# set score @p pk to targetHp = ceil(savedHp)
+execute store result score $$t pk run data get storage pk S.L.Health -1
+scoreboard players set @p pk 0
+scoreboard players operation @p pk -= $$t pk
+
+# set absorption amount to targetHp's next highest multiple of 4.
+# current hp (normal + absorption) = 24 + floor(targetHp / 4) * 4.
+effect give @p absorption
+effect give @p[scores={pk=4..}] absorption 1 1
+effect give @p[scores={pk=8..}] absorption 1 2
+effect give @p[scores={pk=12..}] absorption 1 3
+effect give @p[scores={pk=16..}] absorption 1 4
+effect give @p[scores={pk=20}] absorption 1 5
+
+# set additional max hp to (targetHp % 4), and heal normal hp to max.
+# current hp (normal + absorption) = 24 + targetHp.
+scoreboard players set 4 pk 4
+scoreboard players operation @p pk %= 4 pk
+attribute @p[scores={pk=1}] generic.max_health base set 21
+attribute @p[scores={pk=2}] generic.max_health base set 22
+attribute @p[scores={pk=3}] generic.max_health base set 23
 data merge storage pk {H:1}
-execute at @p run summon area_effect_cloud ~ ~ ~ {Effects:[{Id:7,id:harming}],Age:-1,Duration:1}
+effect give @p instant_health 1 9
+data merge storage pk {H:1}
 
+# deal 24 dmg, so current hp = targetHp
+effect give @p instant_damage 1 2
+data merge storage pk {H:1}
+
+# clear effect and restore normal max hp
+effect clear @p absorption
+attribute @p generic.max_health base set 20
 """).substitute())
 
 
